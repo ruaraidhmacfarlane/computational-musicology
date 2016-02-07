@@ -1,0 +1,72 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{fullpage, pgfgantt, forloop}
+\usepackage[margin=0.5in]{geometry}
+
+\bibliographystyle{plain}
+\begin{document}
+
+\title{Bioinformatical Methods for Computational Musicology\\ Project Plan}
+\author{Ruaraidh Macfarlane \\ \texttt{r.macfarlane.12@aberdeen.ac.uk}}
+\maketitle
+
+  \section{Introduction}
+    It is possible that through the study of musicology, we can grant ourselves a deeper understanding of the thought processes of a composer. This is not only useful for teaching and improvising in the styles of a particular composer, but also it enables us to make reasonable assumptions about the composers of pieces where the composer is unknown, correcting mistakes in manuscript and missing sections of pieces that have been lost over time.  When studying musicology, computational methods enable studies to be carried out over a large volume of works.
+  
+    Bioinformatics is the application of computer technology to the management of biological information.  The discovery of common patterns in a set of structures allows for the structure of various genes to be determined. \cite{eidhammer2000structure} Parallels can be drawn from this to the problem of determining missing sections of music in incomplete pieces.  This project aims to utilise techniques used in bioinformatics to investigate pattern matching of Renaissance pieces.
+  
+
+  \section{Goals}
+    Core requirements of the project are as follows:
+    \begin{itemize}
+      \item{Understand the weakness of existing computational musicology program - Humdrum \cite{humdrum}}
+      \item{Investigate and compare various methods used in bioinformatics for pattern matching music.}
+      \item{Time permitting and assuming successful methodology, use data mining to rank matches by similarity, rather than direct matches.}
+      \item{Time permitting and assuming successful methodology, attempt to identify missing parts in Renaissance pieces and analyse the accuracy of this.}
+    \end{itemize}
+
+  \section{Methodology}
+    Initially, a review into the Humdrum Toolkit \cite{humdrum} will be carried out to understand it's limitations. Further literature review will be conducted of the different techniques used in bioinformatics to establish a potential mechanism to relate these to the study of computational musicology.  
+    
+    Where the limitations in the Humdrum Toolkit lie, methods researched from bioinformatics will be taken to create a tool that will expand on this existing toolkit. 
+
+    The University of Aberdeen has a corpus of ‘gold standard’ pieces annotated so that they can be read by a computer.  This corpus will be used as the resources to perform the experiments.  
+    
+    A common problem with pattern matching for music is that musical repetitions aren't always exact matches. Review of algorithms in bioinformatics that can return matches by similarity ranking instead of exact matches are covered in the article \textit{Querying event sequences by exact match or similarity search: Design and empirical evaluation} \cite{wongsuphasawat2012querying}, these methods will be implemented and evaluated on how well they can transfer to computational musicology.
+    
+  \section{Resources Required}
+    It is necessary to have a corpus of “gold standard” pieces by the same composer and access to the Humdrum Toolkit.
+  
+    There are no strict hardware or software requirements for this project, only a computer running UNIX.
+
+  \section{Risk Assessment}
+    The intricacy of music is vastly greater than that of amino acids, therefor there is a likelihood that the success we see from bioinformatics will not transfer over to computational musicology.
+  
+    Another risk that comes with this research project is that discoveries are made that have already been written about, extensive literature review will be done to avoid this possibility as much as possible.
+    
+    Some of the music pieces in the corpus are encoded from midi, this gives ambiguity to accidentals, in MIDI for example, C\# and Db are recognised as the same note, but in music theory it is necessary that they are distinguishable from each other. The risk here is that their maybe mistakes in the corpus. The risk is mitigated as each piece is checked by a musicologist for these mistakes.
+
+  \section{Timetable}
+
+  \begin{ganttchart}[bar height=0.3,y unit chart=0.5cm]{1}{16}
+    \textbf{
+      \gantttitle{wk 25}{2}
+      \newcounter{weeknumber}
+      \forloop{weeknumber}{26}{\value{weeknumber} < 39}{
+        \gantttitle{\arabic{weeknumber}}{1}
+      }
+      \gantttitle{39}{1} \\
+    }
+
+    \ganttbar{Planning}{1}{2} \\
+    \ganttbar{Literature Review}{1}{6} \\
+    \ganttbar{Humdrum Review}{3}{5} \\
+    \ganttbar{Implementations}{4}{12} \\
+    \ganttbar{Documentation}{3}{16} \\
+    \ganttbar{Evaluation}{10}{16} \\
+    \ganttmilestone{Project Due Date}{16}
+  \end{ganttchart}
+
+  \section{References}
+  \bibliography{ProjectPlan}
+
+\end{document}
