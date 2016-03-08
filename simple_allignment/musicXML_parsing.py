@@ -21,6 +21,7 @@ class MusicXMLParsing:
 		if bar <= len(self.rhythm_hash):
 			self.gapped_score_rhythm = self.rhythm_hash
 			self.gapped_score_rhythm.pop(bar-1)
+			self.gapped_score_rhythm.append('    ')
 			self.gapped_bar_num = bar
 		else:
 			sys.exit("Error: Cannot create a gap, bar is out of range of music")

@@ -20,22 +20,25 @@ def simple_allignment(gapped_piece, comparison_piece):
 		temp_gapped_piece_extended = copy.deepcopy(gapped_piece_extended)
 		temp_comparison_piece_extended = copy.deepcopy(comparison_piece_extended)
 
-		if i % 2 == 1:
-			gapped_piece_index += 1
+		print temp_gapped_piece_extended
+		print temp_comparison_piece_extended
 
-		bar_num = gapped_piece_index + removed_bar_no - 1
-		removed_bar = temp_gapped_piece_extended.pop(bar_num)
-		replacing_bar_arr.append(temp_comparison_piece_extended.pop(bar_num))
+		# if i % 2 == 1:
+		# 	gapped_piece_index += 1
 
-		min_edits_arr.append(edit_distance(temp_gapped_piece_extended, temp_comparison_piece_extended))
+		# bar_num = gapped_piece_index + gapped_piece.gapped_bar_num - 1
+		# removed_bar = temp_gapped_piece_extended.pop(bar_num)
+		# replacing_bar_arr.append(temp_comparison_piece_extended.pop(bar_num))
 
-	returned_bar = find_gap_bar(replacing_bar_arr, min_edits_arr)
-	min_edit_distance = min(min_edits_arr)
+	# 	min_edits_arr.append(edit_distance(temp_gapped_piece_extended, temp_comparison_piece_extended))
 
-	return returned_bar, min_edit_distance
+	# returned_bar = find_gap_bar(replacing_bar_arr, min_edits_arr)
+	# min_edit_distance = min(min_edits_arr)
 
-def find_gap_bar(replacing_bars, edit_distances):
-	return replacing_bars[edit_distances.index(min(edit_distances))]
+	# return returned_bar, min_edit_distance
+
+# def find_gap_bar(replacing_bars, edit_distances):
+# 	return replacing_bars[edit_distances.index(min(edit_distances))]
 
 def extend(x, y):
 	a = ['    '] * len(y)
@@ -91,7 +94,7 @@ def main():
 
 	a.create_gap(3)
 
-	# replaced_bar = simple_allignment(a, b, 1)
+	replaced_bar = simple_allignment(a, b)
 	# print replaced_bar
 	return
 
