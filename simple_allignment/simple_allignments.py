@@ -1,27 +1,40 @@
 import copy, musicXML_parsing
 
 
+# class will be easier to work with
+class SimpleAllignment:
+
+	gapped_piece = []
+	comparison_piece = []
+
+# this could be a constructor
 def simple_allignment(gapped_piece, comparison_piece):
-	comparison_arr_size = gapped_piece.length + comparison_piece.length
-	# Just using it for rhythms so far
-	extended_pieces = extend(gapped_piece.gapped_score_rhythm, comparison_piece.rhythm_hash)
-	gapped_piece_extended = extended_pieces[0]
-	comparison_piece_extended = extended_pieces[1]
+	extended_length = len(extended_pieces[0])
 
-	gapped_piece_index = 0
-	replacing_bar_arr = []
-	min_edits_arr = []
+	for bar in range(extended_length):
+		fill_arr(i, gapped_piece.rhythm_hash, comparison_piece.rhythm_hash)
 
-	for i in range(comparison_arr_size):
-		tuple_arr = fill_arr(i, gapped_piece_extended, comparison_piece_extended)
-		gapped_piece_extended = tuple_arr[0]
-		comparison_piece_extended = tuple_arr[1]
+# def simple_allignment(gapped_piece, comparison_piece):
+# 	comparison_arr_size = gapped_piece.length + comparison_piece.length
+# 	# Just using it for rhythms so far
+# 	extended_pieces = extend(gapped_piece.gapped_score_rhythm, comparison_piece.rhythm_hash)
+# 	gapped_piece_extended = extended_pieces[0]
+# 	comparison_piece_extended = extended_pieces[1]
 
-		temp_gapped_piece_extended = copy.deepcopy(gapped_piece_extended)
-		temp_comparison_piece_extended = copy.deepcopy(comparison_piece_extended)
+# 	gapped_piece_index = 0
+# 	replacing_bar_arr = []
+# 	min_edits_arr = []
 
-		print temp_gapped_piece_extended
-		print temp_comparison_piece_extended
+# 	for i in range(comparison_arr_size):
+# 		tuple_arr = fill_arr(i, gapped_piece_extended, comparison_piece_extended)
+# 		gapped_piece_extended = tuple_arr[0]
+# 		comparison_piece_extended = tuple_arr[1]
+
+# 		temp_gapped_piece_extended = copy.deepcopy(gapped_piece_extended)
+# 		temp_comparison_piece_extended = copy.deepcopy(comparison_piece_extended)
+
+# 		print temp_gapped_piece_extended
+# 		print temp_comparison_piece_extended
 
 		# if i % 2 == 1:
 		# 	gapped_piece_index += 1
@@ -48,14 +61,15 @@ def extend(x, y):
 	return(x_extended, y_extended)
 
 def fill_arr(index, x, y):
+	extended_pieces = extend(x, y)
 	if index % 2 == 0:
-		swap = x.pop()
-		x = [swap] + x
+		swap = extended_pieces[0].pop()
+		extended_pieces[0] = [swap] + extended_pieces[0]
 	else:
-		swap = y.pop(0)
-		y = y + [swap]
+		swap = extended_pieces[1].pop(0)
+		extended_pieces[1] = extended_pieces[1] + [swap]
 
-	return (x, y)
+	return (extended_pieces[0], extended_pieces[1])
 
 def substCost(x, y):
     if x == y: 
