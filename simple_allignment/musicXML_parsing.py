@@ -1,4 +1,4 @@
-import music21, sys
+import music21, sys, copy
 
 
 class MusicXMLParsing:
@@ -19,7 +19,7 @@ class MusicXMLParsing:
 	# Only to work for hashed rhythms for now, when parsons is included this will create a gap in that array too
 	def create_gap(self, bar):
 		if bar <= len(self.rhythm_hash):
-			self.gapped_score_rhythm = self.rhythm_hash
+			self.gapped_score_rhythm = copy.deepcopy(self.rhythm_hash)
 			self.gapped_score_rhythm.pop(bar-1)
 			# self.gapped_score_rhythm.append('    ')
 			self.gapped_bar_num = bar

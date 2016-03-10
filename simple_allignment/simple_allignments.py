@@ -1,25 +1,35 @@
 import copy, musicXML_parsing
 
 
-# class will be easier to work with
 class SimpleAllignment:
 
 	gapped_piece = []
 	comparison_piece = []
+	gapped_extended_piece = []
+	comparison_extended_piece = []
+	extended_length = 0
+	min_edit_alignments = []
 
-# this could be a constructor
-def simple_allignment(gapped_piece, comparison_piece):
-	extended_length = len(extended_pieces[0])
+	def __init__(self, gapped, comparison):
+		self.gapped_piece = gapped.rhythm_hash
+		self.comparison_piece = comparison.rhythm_hash
+		self.extended_length= len(self.gapped_piece) + len(self.comparison_piece)
+		self.extend()
+		# self.allign()
 
-	for bar in range(extended_length):
-		fill_arr(i, gapped_piece.rhythm_hash, comparison_piece.rhythm_hash)
+	def extend(self):
+		a = ['    '] * len(self.gapped_piece)
+		b = ['    '] * len(self.comparison_piece)
+		self.gapped_extended_piece = self.gapped_piece + a
+		self.comparison_extended_piece = b + self.comparison_piece
+
+	# def align(self):
+	# 	for i in range(extended_length):
+
+
+# class EditDistance:
 
 # def simple_allignment(gapped_piece, comparison_piece):
-# 	comparison_arr_size = gapped_piece.length + comparison_piece.length
-# 	# Just using it for rhythms so far
-# 	extended_pieces = extend(gapped_piece.gapped_score_rhythm, comparison_piece.rhythm_hash)
-# 	gapped_piece_extended = extended_pieces[0]
-# 	comparison_piece_extended = extended_pieces[1]
 
 # 	gapped_piece_index = 0
 # 	replacing_bar_arr = []
@@ -108,7 +118,11 @@ def main():
 
 	a.create_gap(3)
 
-	replaced_bar = simple_allignment(a, b)
+	align = SimpleAllignment(a, b)
+	print align.gapped_extended_piece
+	print align.comparison_extended_piece
+
+	# replaced_bar = simple_allignment(a, b)
 	# print replaced_bar
 	return
 
