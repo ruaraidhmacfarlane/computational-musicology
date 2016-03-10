@@ -9,6 +9,8 @@ class MusicXMLParsing:
 	gapped_score_rhythm = []
 	length = 0
 	gapped_bar_num = 0
+	# Hard coded for now until gaps in bars get bigger
+	GAP_LENGTH = 1
 
 	def __init__(self, path):
 		self.parsed_score = music21.converter.parse(path)
