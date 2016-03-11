@@ -4,7 +4,7 @@ import music21, sys, copy
 class MusicXMLParsing:
 
 	parsed_score = None
-	rhythm_hash = []
+	rhythm_hash = ['uuuu', 'xxxx', 'yyyy', 'zzzz']
 	parsons_hash = []
 	length = 0
 	gapped_bar_num = 0
@@ -13,7 +13,7 @@ class MusicXMLParsing:
 
 	def __init__(self, path):
 		self.parsed_score = music21.converter.parse(path)
-		self.rhythm_hash = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
+		# self.rhythm_hash = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
 		self.length = len(self.rhythm_hash)
 		
 	# def parsons_code(self):		
