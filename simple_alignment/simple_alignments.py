@@ -80,6 +80,7 @@ class EditDistance:
 		self.get_edit_distance(comparison_obj.gapped_extended_piece, temp_extended_copy)
 		if temp_replaced_bar != '    ':
 			self.actual_replaced_bar_num = self._get_replaced_bar_num()
+			self.replaced_bar = temp_replaced_bar
 
 	def _get_replaced_bar_num(self):
 		number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
@@ -159,11 +160,14 @@ class EditDistance:
 	    return 1
     
 def main():
-	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-	b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-	a.create_gap(3)
-	align = SimpleAlignment(a, b)
-	print 'edit distance: ', align.min_edit_obj.edit_distance
-	print 'replaced bar: ', algin.min_edit_obj.e
+	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/pitch-test.xml')
+	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/pitch-test.xml')
+
+	print a.parsons_hash
+
+	# a.create_gap(3)
+	# align = SimpleAlignment(a, b)
+	# print 'edit distance: ', align.min_edit_obj.edit_distance
+	# print 'replaced bar: ', align.min_edit_obj.replaced_bar
 
 main()
