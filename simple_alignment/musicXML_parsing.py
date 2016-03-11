@@ -36,14 +36,26 @@ class MusicXMLParsing:
 		contour_arr = []
 		for pitch in self.parsed_score.pitches:
 			if len(contour_arr) == 0:
-				last_pitch = pitch.nameWithOctave
+				last_pitch = pitch
 				contour_arr.append('*')
 			else:
-				if pitch.nameWithOctave < last_pitch:
-					contour_arr.append('d')
-				elif pitch.nameWithOctave > last_pitch:
-					contour_arr.append('u')
-				else:
-					contour_arr.append('r')
-				last_pitch = pitch.nameWithOctave
+				contour_arr.append(self._compare_pitch(last_pitch, pitch))
+				last_pitch = pitch
 		return contour_arr
+
+	def _compare_pitch(self, last_pitch, pitch):
+		pitch_list = ['C', 'C#', 'D-', 'D', 'D#', 'E-', 'E', 'F-', 'E#' , 'F', 'F#', 'G-', 'G', 'G#', 'A-', 'A', 'A#', 'B-', 'B', 'C-', 'B#']
+		if last_pitch.nameWithOctave == pitch.nameWithOctave:
+			return 'r'
+		if last_pitch.octave != pitch.octave:
+			if last_pitch.octave < pitch.octave:
+				return 'u'
+			else:
+				return 'd'
+		else:
+			last_pitch_index = pitch_list.index(last_pitch.name)
+			curr_pitch_index = pitch_list.index(pitch.name)
+			if last_pitch_index < curr_pitch_index:
+				return 'u'
+			else:
+				return 'd'
