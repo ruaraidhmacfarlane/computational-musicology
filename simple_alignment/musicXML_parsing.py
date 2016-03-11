@@ -35,6 +35,7 @@ class MusicXMLParsing:
 	def _parsons_code(self):
 		contour_arr = []
 		for pitch in self.parsed_score.pitches:
+			print pitch.nameWithOctave
 			if len(contour_arr) == 0:
 				last_pitch = pitch
 				contour_arr.append('*')

@@ -160,7 +160,7 @@ class EditDistance:
 	    return 1
     
 def main():
-	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/pitch-test.xml')
+	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/accidental-test.xml')
 	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/pitch-test.xml')
 
 	print a.parsons_hash
