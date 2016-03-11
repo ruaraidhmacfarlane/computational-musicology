@@ -160,10 +160,10 @@ class EditDistance:
 	    return 1
     
 def main():
-	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/accidental-test.xml')
-	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/pitch-test.xml')
+	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
+	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
 
-	print a.parsons_hash
+	# print a.parsons_code
 
 	# a.create_gap(3)
 	# align = SimpleAlignment(a, b)

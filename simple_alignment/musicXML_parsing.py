@@ -5,7 +5,8 @@ class MusicXMLParsing:
 
 	parsed_score = None
 	rhythm_hash = []
-	parsons_hash = []
+	pitch_hash = []
+	parsons_code = []
 	length = 0
 	gapped_bar_num = 0
 	# Hard coded for now until gaps in bars get bigger
@@ -15,7 +16,8 @@ class MusicXMLParsing:
 		self.parsed_score = music21.converter.parse(path)
 		self.rhythm_hash = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
 		self.length = len(self.rhythm_hash)
-		self.parsons_hash = self._parsons_code()
+		# self.pitch_hash = self._hash_pitches()
+		self.parsons_code = self._parsons_code()
 
 	def create_gap(self, bar):
 		if bar <= len(self.rhythm_hash):
@@ -26,6 +28,9 @@ class MusicXMLParsing:
 		else:
 			sys.exit("Error: Cannot create a gap, bar is out of range of music")
 
+	# def _hash_pitches(self):
+		# measures = self.parsed_score.measures
+		# print "\n".join(dir(self.parsed_score.parts[0].measures)
 	"""
 	u = "up," if the note is higher than the previous note
 	d = "down," if the note is lower than the previous note
@@ -34,14 +39,16 @@ class MusicXMLParsing:
 	"""
 	def _parsons_code(self):
 		contour_arr = []
+		print self.parsed_score.show('text')
 		for pitch in self.parsed_score.pitches:
-			print pitch.nameWithOctave
+			# print pitch.nameWithOctave
 			if len(contour_arr) == 0:
 				last_pitch = pitch
 				contour_arr.append('*')
 			else:
 				contour_arr.append(self._compare_pitch(last_pitch, pitch))
 				last_pitch = pitch
+		# contour_hash = self._convert_bars(contour_arr)
 		return contour_arr
 
 	def _compare_pitch(self, last_pitch, pitch):
@@ -60,3 +67,5 @@ class MusicXMLParsing:
 				return 'u'
 			else:
 				return 'd'
+
+	# def _convert_bars(self, contour_arr):
