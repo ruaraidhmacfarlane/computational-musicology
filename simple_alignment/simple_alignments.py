@@ -162,10 +162,6 @@ class EditDistance:
 def main():
 	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
 	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-
-	# print a.parsons_code
-
-	# a.create_gap(3)
 	# align = SimpleAlignment(a, b)
 	# print 'edit distance: ', align.min_edit_obj.edit_distance
 	# print 'replaced bar: ', align.min_edit_obj.replaced_bar
