@@ -3,6 +3,8 @@ import copy, musicXML_parsing
 
 class SimpleAlignment:
 
+	# parson || rhythm
+	attr = ''
 	gapped_parse = None
 	comparison_parse = None
 	gapped_extended_piece = []
@@ -13,7 +15,8 @@ class SimpleAlignment:
 	right_shift = 0
 	left_shift = 0
 
-	def __init__(self, gapped, comparison):
+	def __init__(self, gapped, comparison, attr):
+		self.attr = attr
 		self.gapped_parse = gapped
 		self.comparison_parse = comparison
 		self.extended_length = gapped.length + comparison.length
@@ -35,19 +38,21 @@ class SimpleAlignment:
 		for i in range(self.extended_length):
 			self.min_edit_alignments.append(EditDistance(i, self))
 			self.adjust(i)
-			print self.gapped_extended_piece
-			print self.comparison_extended_piece
 
 	def extend(self):
-		a = ['    '] * self.gapped_parse.length
-		b = ['    '] * self.comparison_parse.length
+		a = [''] * self.gapped_parse.length
+		b = [''] * self.comparison_parse.length
 		self.left_shift = len(b)
-		self.gapped_extended_piece = copy.deepcopy(self.gapped_parse).rhythm_hash + a
-		self.comparison_extended_piece = b + copy.deepcopy(self.comparison_parse).rhythm_hash
+		if self.attr == 'parson':
+			self.gapped_extended_piece = copy.deepcopy(self.gapped_parse).parsons_code + a
+			self.comparison_extended_piece = b + copy.deepcopy(self.comparison_parse).parsons_code
+		elif self.attr == 'rhythm':
+			self.gapped_extended_piece = copy.deepcopy(self.gapped_parse).rhythm_hash + a
+			self.comparison_extended_piece = b + copy.deepcopy(self.comparison_parse).rhythm_hash
 
 	def create_gap(self):
 		self.gapped_extended_piece.pop(self.gapped_parse.gapped_bar_num - 1)
-		self.gapped_extended_piece.append('    ')
+		self.gapped_extended_piece.append('')
 
 	def adjust(self, adjust_index):
 		if adjust_index % 2 == 0:
@@ -64,7 +69,7 @@ class EditDistance:
 	edit_distance = -1
 	replacing_arr_index = 0
 	actual_replaced_bar_num = 0
-	replaced_bar = '    '
+	replaced_bar = ''
 	adjust_index = -1
 	comparison_obj = None
 
@@ -78,7 +83,7 @@ class EditDistance:
 		temp_extended_copy = copy.deepcopy(comparison_obj.comparison_extended_piece)
 		temp_replaced_bar = temp_extended_copy.pop(self.replacing_arr_index)
 		self.get_edit_distance(comparison_obj.gapped_extended_piece, temp_extended_copy)
-		if temp_replaced_bar != '    ':
+		if temp_replaced_bar != '':
 			self.actual_replaced_bar_num = self._get_replaced_bar_num()
 			self.replaced_bar = temp_replaced_bar
 
@@ -90,7 +95,6 @@ class EditDistance:
 		trimmed = self._trim(gapped, temp_comparison)
 		gapped = trimmed[0]
 		temp_comparison = trimmed[1]
-
 		n = len(gapped)
 		m = len(temp_comparison)
 
@@ -119,18 +123,18 @@ class EditDistance:
 		first_hit_y = False
 
 		for i in range(len(x)):
-			if first_hit_x == False and x[i] != '    ':
+			if first_hit_x == False and x[i] != '':
 				first_hit_x = True
 				first_x = i
-			if first_hit_x == True and x[i] == '    ':
+			if first_hit_x == True and x[i] == '':
 				last_x = i
 				break
 
 		for j in range(len(y)):
-			if first_hit_y == False and y[j] != '    ':
+			if first_hit_y == False and y[j] != '':
 				first_hit_y = True
 				first_y = j
-			if first_hit_y == True and y[j] == '    ':
+			if first_hit_y == True and y[j] == '':
 				last_y = j
 				break
 
@@ -160,10 +164,20 @@ class EditDistance:
 	    return 1
     
 def main():
-	a = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-	# b = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-	# align = SimpleAlignment(a, b)
-	# print 'edit distance: ', align.min_edit_obj.edit_distance
-	# print 'replaced bar: ', align.min_edit_obj.replaced_bar
+	twinkle_x = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
+	twinkle_y = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
+
+	rhythm_x = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
+	rhythm_y = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
+
+	twinkle_x.create_gap(3)
+	rhythm_x.create_gap(3)
+
+	align_twinkle = SimpleAlignment(twinkle_x, twinkle_y, 'parson')
+	align_rhythm = SimpleAlignment(rhythm_x, rhythm_y, 'rhythm')
+	
+	print 'edit distance: ', align_twinkle.min_edit_obj.edit_distance
+	print 'replaced bar: ', align_twinkle.min_edit_obj.replaced_bar
+	print 'replaced bar number: ', align_twinkle.min_edit_obj.actual_replaced_bar_num
 
 main()
