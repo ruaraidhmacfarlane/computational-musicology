@@ -402,7 +402,7 @@
     \begin{center}%
     A dissertation submitted in partial fulfilment \\
     of the requirements for the degree of \\
-    \textbf{\@degree@string} \\
+    \textbf{\@bachelor} \\
     of the \\
     \textbf{University of Aberdeen}.\\[2em]
     \includegraphics[width=2cm]{abdnshield}

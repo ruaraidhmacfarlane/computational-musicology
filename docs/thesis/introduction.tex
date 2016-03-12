@@ -1,0 +1,39 @@
+\chapter{Introduction\label{chap:introduction}}
+
+\section{Overview}
+
+\textit{To write at the end of project.}
+
+\section{Motivations}
+
+Joseph Kermen suggests, in his Book \texttt{Contemplating Musicology} \citep{kerman2009contemplating}, that musicology can be defined as: ``dealing essentially with the factual, the documentary, the verifiable, the analysable, the positivistic'' elements of music. Musicologists can have insight into composers creative processes. This is particularly useful in situations where manuscripts of late composers needs restored. This includes, making reasonable assumptions of composers of anonymous pieces, and filling in gaps in a musical piece that maybe due to a section of a piece being lost over time, or a mistake that a composer made when writing on manuscript that has been removed and needs resolved. In the case of this project, the focus will be on the latter problem of filling gaps of musical motifs. 
+
+Since recent developments in computational methods of music analysis, musicologist had to solve the aforementioned problems by hand. This possibly is still a more accurate way of analysing music due to the computational methods being relatively new in comparison. However, to analyse music by hand requires a great knowledge in music theory, and can prove tedious and time consuming.
+
+A main reason computational musicology has emerged so that large databases of pieces can be analysed \citep{cook2004computational}. The Music21 Toolkit \citep{cuthbert2010music21} that is used for computer-aided musicology, has the motto: ``listen faster'' allowing a musicologist to have an overall sense of a piece or repertoire of pieces. Frauke J{\"u}rgensen states the usefulness of computational musicology in searching for patterns in notation across many pieces \citep{jurgensen2015partial}, a process that has not been attempted by hand due to the vast amount of time and work involved in such a project. By pattern matching it allows potential similarities from similar motifs to be used to fill gaps in a specific motif. Even if this just proves to act as a naive approach to act as a foundation for a musicologist to continue by hand.
+
+\section{Primary Goals}
+
+Primarily, the aim of this thesis is to evaluate existing heuristic methods of pattern matching in computational musicology and compare them with dynamic programming methods. These methods will then be used to fill gaps in monophonic motifs. To begin with, a naive approach to filling gaps will be used. This will be considered successful when:
+
+\begin{itemize}
+    \item A set of composers is chosen to be tested on.
+    \item A data format for representing music scores is decided.
+    \item Various suitable pattern matching algorithms have been evaluated.
+    \item Results of these algorithms have been compared with the relevant publications.
+\end{itemize}
+
+\section{Secondary Goals}
+
+Furthermore, there are secondary goals of attempting to achieve the same results with the use of polyphonic scores instead of monophonic.
+
+If filling gaps in motifs using naive approaches proves successful, then statical methods used in bioinformatics to fill gaps of DNA sequences will be explored to attempt to further improve the naive approaches specified in the primary goals. These secondary goals will be considered successful when:
+
+\begin{itemize}
+    \item Polyphonic scores can be parsed and processed as successfully as monopohnic scores.
+    \item Approaches to fill gaps naively are adapted using data mining methods that are prevalent in bioinformatics.
+    \item The statistical approaches are compared with the naive approach.
+\end{itemize}
+
+
+\section{Structure}

@@ -1,0 +1,115 @@
+\chapter{Background\label{chap:background}}
+
+\section{Existing Techniques for Pattern Matching}
+
+\subsection{Bioinformatics}
+
+In bioinformatics, ``alignments between two or more related nucleotide or polypeptide sequences can be found, evaluated, and used to search through databases of sequence information for genes or proteins relevant to a particular research problem'' \citep{krane2003fundamental}.  By evaluating sequence alignments, the following problems can be solved:
+\begin{itemize}
+    \item Determining functions of a newly discovered genetic sequence.
+    \item Determining the evolutionary relationships among genes, proteins, and entire species by examining the divergence of the genetic or amino acid sequences from a common ancestor \citep{krane2003fundamental}.
+    \item Predicting the structure and function of proteins.
+\end{itemize}
+
+An alignment between two sequences can be defined as a pairwise match between each character of each sequence. Alignments can be maximised by either allowing or not allowing gaps in a sequence.
+
+\subsubsection{No Gaps Allowed}
+
+By not allowing gaps in the sequence, alignment is simply a matter of choosing the starting point for the shorter sequence. For example, the sequence `ATCTAT' and `AGAT' can be aligned in the following 3 ways, see figure~\ref{fig:no-gaps}.
+
+\begin{figure}[h]
+    \footnotesize
+        (i)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+            A & G & A & T &   &   \\
+            \hline
+        \end{tabular}
+        \hfill
+        (ii)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+              & A & G & A & T &   \\
+            \hline
+        \end{tabular}
+        \hfill
+        (iii)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+              &   & A & G & A & T \\
+            \hline
+        \end{tabular}
+        \hfill 
+\caption{Simple Alignment Without Gaps}
+\label{fig:no-gaps}
+\end{figure}
+
+\subsubsection{Gaps Allowed}
+
+Aligning sequence with gaps allowed is how accurate score alignments can be made when mutations, insertions or deletions occur. For example, the sequence `ATCTAT' and `AGAT' could possibly be aligned in the following 3 ways, see figure~\ref{fig:gaps}. There is of course many more possibilities.
+
+\begin{figure}[ht]
+    \footnotesize
+        (i)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+            A & G & - & A & - & T \\
+            \hline
+        \end{tabular}
+        \hfill
+        (ii)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+            A & - & G & - & A & T \\
+            \hline
+        \end{tabular}
+        \hfill
+        (iii)
+        \begin{tabular}[t]{|llllll|}
+            \hline
+            A & T & C & T & A & T \\
+            A & - & - & G & A & T \\
+            \hline
+        \end{tabular}
+        \hfill 
+\caption{Simple Alignment Without Gaps}
+\label{fig:gaps}
+\end{figure}
+
+Due to the use of gaps allowing alignments to be maximised, gap penalties must be included. This stops a perfect alignment with gaps when two different sequences are used, giving a more accurate scoring to sequences that are more likely to represent true evolutionary relationships. Gap penalties can be done using simple gap penalties (simple scores for match, mismatch and gap) or origination and length penalties. It is not uncommon to find a number of equally optimal alignments between two sequences using simple gap penalties. In order to further distinguish between alignments is to differentiate between those that contain many isolated gaps and fewer, but longer, sequences of gaps. 
+
+\subsection{Computational Musicology}
+
+\section{Existing Techniques for Filling in Gaps}
+
+\subsection{Bioinformatics}
+
+\subsection{Computational Musicology}
+
+\section{Existing Computational Musicology Tools}
+
+\subsection{The Humdrum Toolkit}
+
+\subsection{VIS Musical Analysis Framework}
+
+\subsection{Music21}
+
+\subsection{Data Formats for Representing Music}
+
+\subsubsection{MIDI}
+
+Problem with MIDI is differentiating between A\# and Bb, for example.
+
+\subsubsection{Kern Scores}
+
+\subsubsection{MusicXML}
+
+\section{Existing Tools in Bioinformatics}
+
+\section{Where From Here?}
+
