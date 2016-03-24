@@ -1,4 +1,4 @@
-import copy, musicXML_parsing
+import copy, musicXML_parsing, os
 
 
 class SimpleAlignment:
@@ -35,9 +35,14 @@ class SimpleAlignment:
 	def align(self):
 		self.extend()
 		self.create_gap()
+		print self.gapped_extended_piece
+		print self.comparison_extended_piece
 		for i in range(self.extended_length):
 			self.min_edit_alignments.append(EditDistance(i, self))
 			self.adjust(i)
+			# print self.gapped_extended_piece
+			# print self.comparison_extended_piece
+
 
 	def extend(self):
 		a = [''] * self.gapped_parse.length
@@ -69,7 +74,7 @@ class EditDistance:
 	edit_distance = -1
 	replacing_arr_index = 0
 	actual_replaced_bar_num = 0
-	replaced_bar = ''
+	replaced_bar = '    '
 	adjust_index = -1
 	comparison_obj = None
 
@@ -83,7 +88,7 @@ class EditDistance:
 		temp_extended_copy = copy.deepcopy(comparison_obj.comparison_extended_piece)
 		temp_replaced_bar = temp_extended_copy.pop(self.replacing_arr_index)
 		self.get_edit_distance(comparison_obj.gapped_extended_piece, temp_extended_copy)
-		if temp_replaced_bar != '':
+		if temp_replaced_bar != '    ':
 			self.actual_replaced_bar_num = self._get_replaced_bar_num()
 			self.replaced_bar = temp_replaced_bar
 
@@ -123,18 +128,18 @@ class EditDistance:
 		first_hit_y = False
 
 		for i in range(len(x)):
-			if first_hit_x == False and x[i] != '':
+			if first_hit_x == False and x[i] != '   ':
 				first_hit_x = True
 				first_x = i
-			if first_hit_x == True and x[i] == '':
+			if first_hit_x == True and x[i] == '    ':
 				last_x = i
 				break
 
 		for j in range(len(y)):
-			if first_hit_y == False and y[j] != '':
+			if first_hit_y == False and y[j] != '    ':
 				first_hit_y = True
 				first_y = j
-			if first_hit_y == True and y[j] == '':
+			if first_hit_y == True and y[j] == '    ':
 				last_y = j
 				break
 
@@ -162,22 +167,49 @@ class EditDistance:
 
 	def _delete_cost(self, x):
 	    return 1
-    
+
+class Corpus:
+
+	old_corpus_file = ""
+	new_corpus_file = ""
+	database = []
+
+	def __init__(self, old_file, new_file):
+		self.old_corpus_file = old_file
+		self.new_corpus_file = new_file
+		self.clean()
+
+	def clean(self):
+		new_corpus = open(self.new_corpus_file, "w")
+		line_num = 0
+		with open(self.old_corpus_file) as corpus:
+			for path in corpus:
+				line_num += 1
+				path = path.rstrip()
+				print 'parsing line ', line_num
+				try:
+					self.database.append(musicXML_parsing.MusicXMLParsing(path))
+					new_corpus.write(path + "\n")
+				except AttributeError: 
+					print '%s is a bad score', path
+				print 'Parsed', path
+
+		new_corpus.close()
+
 def main():
-	twinkle_x = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-	twinkle_y = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-
-	rhythm_x = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-	rhythm_y = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-
-	twinkle_x.create_gap(3)
-	rhythm_x.create_gap(3)
-
-	align_twinkle = SimpleAlignment(twinkle_x, twinkle_y, 'parson')
-	align_rhythm = SimpleAlignment(rhythm_x, rhythm_y, 'rhythm')
 	
-	print 'edit distance: ', align_twinkle.min_edit_obj.edit_distance
-	print 'replaced bar: ', align_twinkle.min_edit_obj.replaced_bar
-	print 'replaced bar number: ', align_twinkle.min_edit_obj.actual_replaced_bar_num
+	# ground_truth_x = musicXML_parsing.MusicXMLParsing('../musicXML/palestrina/Missa-Petra-sancta_Benedictus_Palestrina-Giovanni-Pierluigi-da_file1.krn')
+
+	
+	# database = []
+
+	database = Corpus("path-list.txt", "parsable-path-list.txt")
+
+	# ground_truth_x.create_gap(3)
+
+	# align = SimpleAlignment(pitch_x, pitch_y, 'rhythm')
+	# print 'edit distance: ', align.min_edit_obj.edit_distance
+	# print 'replaced bar: ', align.min_edit_obj.replaced_bar
+	# print 'replaced bar number: ', align.min_edit_obj.actual_replaced_bar_num
 
 main()

@@ -1,0 +1,2 @@
+../musicXML/palestrina/Missa-Nigra-sum_Agnus-dei-1_Palestrina-Giovanni-Pierluigi-da_file1.krn
+../musicXML/palestrina/Missa-Gia-fu-chi-m-ebbe-cara_Agnus-Dei_Palestrina-Giovanni-Pierluigi-da_file1.krn

@@ -1,6 +1,5 @@
 import music21, sys, copy
 
-
 class MusicXMLParsing:
 
 	parsed_score = None
@@ -14,18 +13,26 @@ class MusicXMLParsing:
 	GAP_LENGTH = 1
 
 	def __init__(self, path):
+		if(self.is_kern(path)):
+			path = music21.converter.parse(path).write('musicxml')
 		self.parsed_score = music21.converter.parse(path)
+		# self.parsed_score.show()
 		# self.parsed_work = music21.parseWork(path)
 		self.rhythm_hash = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
 		self.length = len(self.rhythm_hash)
 		# self.pitch_hash = self._hash_pitches()
 		self.parsons_code = self._parsons_code()
 
+
+	def is_kern(self, path_name):
+		split_path = path_name.split('.')
+		if split_path[-1] == 'krn':
+			return True
+		else:
+			return False
+
 	def create_gap(self, bar):
 		if bar <= len(self.rhythm_hash):
-			# self.gapped_score_rhythm = copy.deepcopy(self.rhythm_hash)
-			# self.gapped_score_rhythm.pop(bar-1)
-			# self.gapped_score_rhythm.append('    ')
 			self.gapped_bar_num = bar
 		else:
 			sys.exit("Error: Cannot create a gap, bar is out of range of music")
@@ -41,15 +48,18 @@ class MusicXMLParsing:
 		measure_map = self.parsed_score.parts[0].measureOffsetMap()
 		measures = sorted(measure_map)
 		for m in measures:
-			index = len(contour_arr)
-			contour_arr.append([])
-			for pitch in measure_map[m][0].notes.pitches:
-				if index == 0 and len(contour_arr[index]) == 0:
-					last_pitch = pitch
-					contour_arr[index].append('*')
-				else:
-					contour_arr[index].append(self._compare_pitch(last_pitch, pitch))
-					last_pitch = pitch
+			bar_string = ""
+			# maybe first bars are rests
+			if len(measure_map[m][0].notes.pitches) != 0:
+				index = len(contour_arr)
+				for pitch in measure_map[m][0].notes.pitches:
+					if index == 0 and len(bar_string) == 0:
+						last_pitch = pitch
+						bar_string += '*'
+					else:
+						bar_string += self._compare_pitch(last_pitch, pitch)
+						last_pitch = pitch
+				contour_arr.append(bar_string)
 		return contour_arr
 
 	def _compare_pitch(self, last_pitch, pitch):
