@@ -1,5 +1,4 @@
-import copy, musicXML_parsing, os
-
+import music21, copy, musicXML_parsing, os
 
 class SimpleAlignment:
 
@@ -157,16 +156,16 @@ class EditDistance:
 		return(x[first:last], y[first:last])
 
 	def _subst_cost(self, x, y):
-	    if x == y: 
-	        return 0
-	    else: 
-	        return 2
+		if x == y:
+			return 0
+		else:
+			return 2
 
 	def _insert_cost(self, x):
-	    return 1
+		return 1
 
 	def _delete_cost(self, x):
-	    return 1
+		return 1
 
 class Corpus:
 
@@ -177,7 +176,14 @@ class Corpus:
 	def __init__(self, old_file, new_file):
 		self.old_corpus_file = old_file
 		self.new_corpus_file = new_file
-		self.clean()
+		#self.clean()
+
+	def list_dir(self):
+		old_corpus = open(self.old_corpus_file, "w")
+		for file in os.listdir("../musicXML/palestrina"):
+			if file.endswith(".krn") or file.endswith(".xml"):
+				old_corpus.write("../musicXML/palestrina/" + file + "\n")
+		old_corpus.close()
 
 	def clean(self):
 		new_corpus = open(self.new_corpus_file, "w")
@@ -188,10 +194,12 @@ class Corpus:
 				path = path.rstrip()
 				print 'parsing line ', line_num
 				try:
-					self.database.append(musicXML_parsing.MusicXMLParsing(path))
+					musicXML_parsing.MusicXMLParsing(path)
 					new_corpus.write(path + "\n")
 				except AttributeError: 
 					print '%s is a bad score', path
+				except music21.exceptions21.StreamException:
+					print '%s is a not 4/4', path
 				print 'Parsed', path
 
 		new_corpus.close()
@@ -204,6 +212,7 @@ def main():
 	# database = []
 
 	database = Corpus("path-list.txt", "parsable-path-list.txt")
+	database.clean()
 
 	# ground_truth_x.create_gap(3)
 
