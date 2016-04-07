@@ -5,13 +5,13 @@ import os
 
 
 class SimpleAlignment:
-    # parson || rhythm
-    attr = ''
+    attr = ''  # parson || rhythm
     gapped_parse = None
     comparison_parse = None
     gapped_piece = []
     comparison_piece = []
-    extended_length = 0
+    longest_length = 0
+    gapped_bar_num = 0
     min_edit_alignments = []
     min_edit_obj = None
     right_shift = 0
@@ -21,84 +21,55 @@ class SimpleAlignment:
         self.attr = feat
         self.gapped_parse = gapped
         self.comparison_parse = comparison
+        self.gapped_bar_num = gapped.gapped_bar_num
+
         if self.attr == 'parson':
             self.gapped_piece = copy.deepcopy(self.gapped_parse).parsons_code
             self.comparison_piece = copy.deepcopy(self.comparison_parse).parsons_code
         elif self.attr == 'rhythm':
             self.gapped_piece = copy.deepcopy(self.gapped_parse).rhythm_hash
             self.comparison_piece = copy.deepcopy(self.comparison_parse).rhythm_hash
-        # self.extended_length = gapped.length + comparison.length
-        self.align()
-        # self.get_min_edit_obj()
 
+        self.base_align()
+        self.get_min_edit_obj()
 
     def get_min_edit_obj(self):
-        minimum_edit = self.min_edit_alignments[0].edit_distance
-        min_obj = None
+        min_obj = self.min_edit_alignments[0]
+        minimum_edit = min_obj.edit_distance
+
         for i in self.min_edit_alignments:
             if i.edit_distance < minimum_edit:
                 minimum_edit = i.edit_distance
                 min_obj = i
         self.min_edit_obj = min_obj
 
-
-    def align(self):
-        # self.extend()
-        # self.create_gap()
-        # print self.gapped_extended_piece
-        # print self.comparison_extended_piece
-
+    def base_align(self):
         gapped_length = len(self.gapped_piece)
         compare_length = len(self.comparison_piece)
 
         if gapped_length == compare_length:
-            print self.gapped_piece
-            print self.comparison_piece
-        elif gapped_length > compare_length:
-            extended_piece = self.extend(self.comparison_piece, self.gapped_piece)
-            print self.gapped_piece
-            print extended_piece
-        elif gapped_length < compare_length:
-            extended_piece = self.extend(self.gapped_piece, self.comparison_piece)
-            print extended_piece
-            print self.comparison_piece
-            # self.shift(compare_length)
+            self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+        # elif gapped_length > compare_length:
+        #     self.comparison_piece = self.extend(self.comparison_piece, self.gapped_piece)
+        #     self.min_edit_alignments = EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1)
+        #     for i in range(gapped_length - 1):
+        #         self.comparison_piece = copy.deepcopy(self.shift(extended_piece))
+        #         self.min_edit_alignments.append(
+        #             EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+        # elif gapped_length < compare_length:
+        #     self.gapped_piece = self.extend(self.gapped_piece, self.comparison_piece)
+        #     self.min_edit_alignments = EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1)
+        #     for i in range(gapped_length - 1):
+        #         self.gapped_piece = copy.deepcopy(self.shift(extended_piece))
 
-            # for i in range(self.extended_length):
-            #     self.min_edit_alignments.append(EditDistance(i, self))
-            #     self.adjust(i)
-            # print self.gapped_extended_piece
-            # print self.comparison_extended_piece
+    self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
 
     def extend(self, shorter, longer):
         difference = len(longer) - len(shorter)
-        extended_arr = ['    '] *  difference
+        extended_arr = ['    '] * difference
         return shorter + extended_arr
 
-    # def shift(self, ):
-        # def extend(self):
-        #     a = ['    '] * self.gapped_parse.length
-        #     b = ['    '] * self.comparison_parse.length
-        #     self.left_shift = len(b)
-        #     if self.attr == 'parson':
-        #         self.gapped_extended_piece = copy.deepcopy(self.gapped_parse).parsons_code + a
-        #         self.comparison_extended_piece = b + copy.deepcopy(self.comparison_parse).parsons_code
-        #     elif self.attr == 'rhythm':
-        #         self.gapped_extended_piece = copy.deepcopy(self.gapped_parse).rhythm_hash + a
-        #         self.comparison_extended_piece = b + copy.deepcopy(self.comparison_parse).rhythm_hash
-        #
-        # def create_gap(self):
-        #     self.gapped_extended_piece.pop(self.gapped_parse.gapped_bar_num - 1)
-        #     self.gapped_extended_piece.append('    ')
-    def adjust(self, adjust_index):
-        if adjust_index % 2 == 0:
-            swap = self.gapped_extended_piece.pop()
-            self.gapped_extended_piece = [swap] + self.gapped_extended_piece
-            self.right_shift += 1
-        else:
-            swap = self.comparison_extended_piece.pop(0)
-            self.comparison_extended_piece = self.comparison_extended_piece + [swap]
-            self.left_shift -= 1
+
 
 
 class EditDistance:
@@ -109,32 +80,16 @@ class EditDistance:
     adjust_index = -1
     comparison_obj = None
 
-    def __init__(self, index, comparison_obj):
-        self.adjust_index = index
-        self.comparison_obj = copy.deepcopy(comparison_obj)
-        if self.adjust_index % 2 == 0:
-            self.replacing_arr_index = comparison_obj.right_shift + comparison_obj.gapped_parse.gapped_bar_num - 1
-        else:
-            self.replacing_arr_index = comparison_obj.gapped_parse.gapped_bar_num + comparison_obj.right_shift - 1
-        temp_extended_copy = copy.deepcopy(comparison_obj.comparison_extended_piece)
-        temp_replaced_bar = temp_extended_copy.pop(self.replacing_arr_index)
-        self.get_edit_distance(comparison_obj.gapped_extended_piece, temp_extended_copy)
-        if temp_replaced_bar != '    ':
-            self.actual_replaced_bar_num = self._get_replaced_bar_num()
-            self.replaced_bar = temp_replaced_bar
+    def __init__(self, gapped, comparison, adjust):
+        self.replaced_bar = comparison[adjust]
+        self.edit_distance = self.get_edit_distance(gapped, comparison)
+    # def _get_replaced_bar_num(self):
+    #     number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
+    #     return number
 
-    def _get_replaced_bar_num(self):
-        number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
-        return number
-
-    def get_edit_distance(self, gapped, temp_comparison):
-        print gapped
-        print temp_comparison
-        trimmed = self._trim(gapped, temp_comparison)
-        gapped = trimmed[0]
-        temp_comparison = trimmed[1]
+    def get_edit_distance(self, gapped, comparison):
         n = len(gapped)
-        m = len(temp_comparison)
+        m = len(comparison)
 
         distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
 
@@ -142,52 +97,15 @@ class EditDistance:
             distance[i][0] = distance[i - 1][0] + self._insert_cost(gapped[i - 1])
 
         for j in range(1, m + 1):
-            distance[0][j] = distance[0][j - 1] + self._delete_cost(temp_comparison[j - 1])
+            distance[0][j] = distance[0][j - 1] + self._delete_cost(comparison[j - 1])
 
         for i in range(1, n + 1):
             for j in range(1, m + 1):
                 distance[i][j] = min(distance[i - 1][j] + 1,
                                      distance[i][j - 1] + 1,
-                                     distance[i - 1][j - 1] + self._subst_cost(temp_comparison[j - 1], gapped[i - 1]))
+                                     distance[i - 1][j - 1] + self._subst_cost(comparison[j - 1], gapped[i - 1]))
 
-        self.edit_distance = distance[n][m]
-
-    def _trim(self, x, y):
-        first_x = -1
-        first_y = -1
-        last_x = -1
-        last_y = -1
-        first_hit_x = False
-        first_hit_y = False
-
-        for i in range(len(x)):
-            if first_hit_x == False and x[i] != '   ':
-                first_hit_x = True
-                first_x = i
-            if first_hit_x == True and x[i] == '    ':
-                last_x = i
-                break
-
-        for j in range(len(y)):
-            if first_hit_y == False and y[j] != '    ':
-                first_hit_y = True
-                first_y = j
-            if first_hit_y == True and y[j] == '    ':
-                last_y = j
-                break
-
-        if first_x == -1:
-            first_x = 0
-        if first_y == -1:
-            first_y = 0
-        if last_x == -1:
-            last_x = len(x)
-        if last_y == -1:
-            last_y = len(y)
-
-        first = min(first_x, first_y)
-        last = max(last_x, last_y)
-        return (x[first:last], y[first:last])
+        return distance[n][m]
 
     def _subst_cost(self, x, y):
         if x == y:
@@ -249,13 +167,11 @@ def main():
     # database.fill_database()
 
     ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-    compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/test1.xml')
+    compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
     ground_truth.create_gap(3)
     align = SimpleAlignment(ground_truth, compare, 'rhythm')
-
-
-# print 'edit distance: ', align.min_edit_obj.edit_distance
-# print 'replaced bar: ', align.min_edit_obj.replaced_bar
+    print 'edit distance: ', align.min_edit_obj.edit_distance
+    print 'replaced bar: ', align.min_edit_obj.replaced_bar
 # print 'replaced bar number: ', align.min_edit_obj.actual_replaced_bar_num
 
 main()
