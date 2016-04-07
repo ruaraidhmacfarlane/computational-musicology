@@ -176,7 +176,13 @@ class Corpus:
 	def __init__(self, old_file, new_file):
 		self.old_corpus_file = old_file
 		self.new_corpus_file = new_file
-		#self.clean()
+
+	def  fill_database(self):
+		with open(self.new_corpus_file) as corpus:
+			for path in corpus:
+				path = path.rstrip()
+				self.database.append(musicXML_parsing.MusicXMLParsing(path))
+
 
 	def list_dir(self):
 		old_corpus = open(self.old_corpus_file, "w")
@@ -212,7 +218,7 @@ def main():
 	# database = []
 
 	database = Corpus("path-list.txt", "parsable-path-list.txt")
-	database.clean()
+	database.fill_database()
 
 	# ground_truth_x.create_gap(3)
 
