@@ -38,7 +38,10 @@ class SimpleAlignment:
         minimum_edit = min_obj.edit_distance
 
         for i in self.min_edit_alignments:
-            if i.edit_distance < minimum_edit:
+            if i.edit_distance < minimum_edit and min_obj.replaced_bar != '':
+                minimum_edit = i.edit_distance
+                min_obj = i
+            elif min_obj.replaced_bar == '':
                 minimum_edit = i.edit_distance
                 min_obj = i
         self.min_edit_obj = min_obj
@@ -46,31 +49,34 @@ class SimpleAlignment:
     def base_align(self):
         gapped_length = len(self.gapped_piece)
         compare_length = len(self.comparison_piece)
-
         if gapped_length == compare_length:
             self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
-        # elif gapped_length > compare_length:
-        #     self.comparison_piece = self.extend(self.comparison_piece, self.gapped_piece)
-        #     self.min_edit_alignments = EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1)
-        #     for i in range(gapped_length - 1):
-        #         self.comparison_piece = copy.deepcopy(self.shift(extended_piece))
-        #         self.min_edit_alignments.append(
-        #             EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+        elif gapped_length > compare_length:
+            extended_piece = copy.deepcopy(self.extend(self.comparison_piece, self.gapped_piece))
+            self.min_edit_alignments.append(EditDistance(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+            for i in range(gapped_length - 1):
+                extended_piece = self.shift(extended_piece)
+                self.min_edit_alignments.append(
+                    EditDistance(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+                # self.comparison_piece = copy.deepcopy(self.shift(extended_piece))
+                # self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
         # elif gapped_length < compare_length:
         #     self.gapped_piece = self.extend(self.gapped_piece, self.comparison_piece)
         #     self.min_edit_alignments = EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1)
         #     for i in range(gapped_length - 1):
         #         self.gapped_piece = copy.deepcopy(self.shift(extended_piece))
 
-    self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+    # self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
 
     def extend(self, shorter, longer):
         difference = len(longer) - len(shorter)
-        extended_arr = ['    '] * difference
+        extended_arr = [''] * difference
         return shorter + extended_arr
 
-
-
+    def shift(self, piece):
+        swap = piece.pop()
+        piece = [swap] + piece
+        return piece
 
 class EditDistance:
     edit_distance = -1
@@ -166,12 +172,12 @@ def main():
     # database = Corpus("path-list.txt", "parsable-path-list.txt")
     # database.fill_database()
 
-    ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-    compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/rhythm-test.xml')
-    ground_truth.create_gap(3)
-    align = SimpleAlignment(ground_truth, compare, 'rhythm')
-    print 'edit distance: ', align.min_edit_obj.edit_distance
-    print 'replaced bar: ', align.min_edit_obj.replaced_bar
+    ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
+    compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/test1.xml')
+    # align = SimpleAlignment(ground_truth, compare, 'rhythm')
+    # print 'edit distance: ', align.min_edit_obj.edit_distance
+    # print 'replaced bar: ', align.
+    # ground_truth.create_gap(3)min_edit_obj.replaced_bar
 # print 'replaced bar number: ', align.min_edit_obj.actual_replaced_bar_num
 
 main()

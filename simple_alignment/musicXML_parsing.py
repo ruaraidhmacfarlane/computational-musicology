@@ -9,6 +9,8 @@ class MusicXMLParsing:
     # pitch_hash = []
     parsons_code = []
     length = 0
+    previous_parsons_bar = ""
+    previous_rhythm_bar = ""
     gapped_bar_num = 0
     # Hard coded for now until gaps in bars get bigger
     GAP_LENGTH = 1
@@ -34,8 +36,10 @@ class MusicXMLParsing:
     def create_gap(self, bar):
         if bar <= len(self.rhythm_hash):
             self.gapped_bar_num = bar
-            self.rhythm_hash[bar - 1] = '    '
-            self.parsons_code[bar - 1] = '    '
+            self.previous_rhythm_bar = self.rhythm_hash[bar - 1]
+            self.previous_parsons_bar = self.parsons_code[bar - 1]
+            self.rhythm_hash[bar - 1] = ''
+            self.parsons_code[bar - 1] = ''
         else:
             sys.exit("Error: Cannot create a gap, bar is out of range of music")
 
