@@ -18,18 +18,21 @@ class Experimenter:
 
     def run_simple_alignment(self):
         piece_list = open(self.corpus_path, "r")
-        ground_truth = musicXML_parsing.MusicXMLParsing(piece_list.readline())
+        first_line = piece_list.readline()
+        piece_list.close()
+        ground_truth = musicXML_parsing.MusicXMLParsing(first_line)
         alignments = []
         i = 0
         start_time = time.time()
-        for piece in self.corpus:
-            i += 1
-            if piece != ground_truth:
-                alignments.append(simple_alignments.SimpleAlignment(ground_truth, piece, "rhythm", self.gapped_bar_num))
-            now_time = time.time()
-            time_left = (now_time - start_time) * (len(self.corpus) - i)
-            print time_left
-        piece_list.close()
+        with open(self.corpus_path) as corpus:
+            for path in corpus:
+                i += 1
+                if path != first_line:
+                    piece = musicXML_parsing.MusicXMLParsing(path)
+                    alignments.append(simple_alignments.SimpleAlignment(ground_truth, piece, "rhythm", self.gapped_bar_num))
+                now_time = time.time()
+                time_left = (now_time - start_time) * (len(self.corpus) - i)
+                print time_left
         max_alignment = self.get_max_score_alignment(alignments)
         naive_result = copy.deepcopy(ground_truth)
         naive_result[self.gapped_bar_num - 1] = max_alignment.replaced_bar
