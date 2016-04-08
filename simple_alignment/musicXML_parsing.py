@@ -3,8 +3,8 @@ import sys
 
 
 class MusicXMLParsing:
+    name = ""
     parsed_score = None
-    parsed_work = None
     rhythm_hash = []
     # pitch_hash = []
     parsons_code = []
@@ -18,6 +18,7 @@ class MusicXMLParsing:
     def __init__(self, path):
         if (self.is_kern(path)):
             path = music21.converter.parse(path).write('musicxml')
+        self.name = self._get_filename(path)
         self.parsed_score = music21.converter.parse(path)
         # self.parsed_score.show()
         # self.parsed_work = music21.parseWork(path)
@@ -25,6 +26,7 @@ class MusicXMLParsing:
         self.length = len(self.rhythm_hash)
         # self.pitch_hash = self._hash_pitches()
         self.parsons_code = self._parsons_code()
+        self.parsed_score = None
 
     def is_kern(self, path_name):
         split_path = path_name.split('.')
@@ -87,4 +89,12 @@ class MusicXMLParsing:
             else:
                 return 'd'
 
-            # def _convert_bars(self, contour_arr):
+                # def _convert_bars(self, contour_arr):
+
+    @staticmethod
+    def _get_filename(path):
+        split_name = path.split('/')
+        directory_len = len(split_name)
+        filename = split_name[directory_len - 1].split('.')
+        name = filename[1]
+        return name

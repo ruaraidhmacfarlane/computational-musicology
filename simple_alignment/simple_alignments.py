@@ -16,13 +16,12 @@ class SimpleAlignment:
     min_edit_obj = None
     max_score_alignments = []
     max_score_obj = None
-    right_shift = 0
-    left_shift = 0
+    alignment_score = 0
 
     def __init__(self, gapped, comparison, feat, gap_num):
         self.attr = feat
-        self.gapped_parse = gapped
-        self.comparison_parse = comparison
+        self.gapped_parse = copy.deepcopy(gapped)
+        self.comparison_parse = copy.deepcopy(comparison)
         self.gapped_parse.create_gap(gap_num)
         self.gapped_bar_num = gap_num
 
@@ -32,9 +31,6 @@ class SimpleAlignment:
         elif self.attr == 'rhythm':
             self.gapped_piece = copy.deepcopy(self.gapped_parse).rhythm_hash
             self.comparison_piece = copy.deepcopy(self.comparison_parse).rhythm_hash
-
-        # print self.gapped_piece
-        # print self.comparison_piece
 
         self.base_align()
         self.get_min_edit_obj()
@@ -51,6 +47,7 @@ class SimpleAlignment:
                 align_score = i.alignment_score
                 align_obj = i
         self.max_score_obj = align_obj
+        self.alignment_score = align_obj.alignment_score
 
     def base_align(self):
         gapped_length = len(self.gapped_piece)
@@ -116,25 +113,6 @@ class Score:
 
         return score
 
-    def get_edit_distance(self, gapped, comparison):
-        n = len(gapped)
-        m = len(comparison)
-
-        distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
-
-        for i in range(1, n + 1):
-            distance[i][0] = distance[i - 1][0] + self._insert_cost(gapped[i - 1])
-
-        for j in range(1, m + 1):
-            distance[0][j] = distance[0][j - 1] + self._delete_cost(comparison[j - 1])
-
-        for i in range(1, n + 1):
-            for j in range(1, m + 1):
-                distance[i][j] = min(distance[i - 1][j] + 1,
-                                     distance[i][j - 1] + 1,
-                                     distance[i - 1][j - 1] + self._subst_cost(comparison[j - 1], gapped[i - 1]))
-        return distance[n][m]
-
     @staticmethod
     def _subst_cost(x, y):
         if x == y:
@@ -191,25 +169,3 @@ class Corpus:
                 print 'Parsed', path
 
         new_corpus.close()
-
-
-def main():
-    # database = Corpus("path-list.txt", "parsable-path-list.txt")
-    # database.fill_database()
-
-    ground_truth = musicXML_parsing.MusicXMLParsing(
-        '../musicXML/palestrina/Agnus-Dei-1_Palestrina-Giovanni-Pierluigi-da_file1.krn')
-    compare = musicXML_parsing.MusicXMLParsing(
-        '../musicXML/palestrina/Agnus-Dei-2_Palestrina-Giovanni-Pierluigi-da_file1.krn')
-    # ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-    # compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/test1.xml')
-
-    # print ground_truth.rhythm_hash
-    # print compare.rhythm_hash
-
-    align = SimpleAlignment(ground_truth, compare, 'rhythm', 3)
-    # print 'edit distance: ', align.min_edit_obj.alignment_score
-    print 'replaced bar: ', align.max_score_obj.replaced_bar
-
-
-main()
