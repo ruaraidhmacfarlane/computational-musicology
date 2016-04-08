@@ -14,14 +14,17 @@ class SimpleAlignment:
     gapped_bar_num = 0
     min_edit_alignments = []
     min_edit_obj = None
+    max_score_alignments = []
+    max_score_obj = None
     right_shift = 0
     left_shift = 0
 
-    def __init__(self, gapped, comparison, feat):
+    def __init__(self, gapped, comparison, feat, gap_num):
         self.attr = feat
         self.gapped_parse = gapped
         self.comparison_parse = comparison
-        self.gapped_bar_num = gapped.gapped_bar_num
+        self.gapped_parse.create_gap(gap_num)
+        self.gapped_bar_num = gap_num
 
         if self.attr == 'parson':
             self.gapped_piece = copy.deepcopy(self.gapped_parse).parsons_code
@@ -30,56 +33,66 @@ class SimpleAlignment:
             self.gapped_piece = copy.deepcopy(self.gapped_parse).rhythm_hash
             self.comparison_piece = copy.deepcopy(self.comparison_parse).rhythm_hash
 
+        # print self.gapped_piece
+        # print self.comparison_piece
+
         self.base_align()
         self.get_min_edit_obj()
 
     def get_min_edit_obj(self):
-        min_obj = self.min_edit_alignments[0]
-        minimum_edit = min_obj.edit_distance
+        align_obj = self.max_score_alignments[0]
+        align_score = align_obj.alignment_score
 
-        for i in self.min_edit_alignments:
-            if i.edit_distance < minimum_edit and min_obj.replaced_bar != '':
-                minimum_edit = i.edit_distance
-                min_obj = i
-            elif min_obj.replaced_bar == '':
-                minimum_edit = i.edit_distance
-                min_obj = i
-        self.min_edit_obj = min_obj
+        for i in self.max_score_alignments:
+            if i.alignment_score > align_score and align_obj.replaced_bar != '':
+                align_score = i.alignment_score
+                align_obj = i
+            elif align_obj.replaced_bar == '':
+                align_score = i.alignment_score
+                align_obj = i
+        self.max_score_obj = align_obj
 
     def base_align(self):
         gapped_length = len(self.gapped_piece)
         compare_length = len(self.comparison_piece)
         if gapped_length == compare_length:
-            self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+            self.max_score_alignments.append(Score(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
         elif gapped_length > compare_length:
             extended_piece = copy.deepcopy(self.extend(self.comparison_piece, self.gapped_piece))
-            self.min_edit_alignments.append(EditDistance(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
-            for i in range(gapped_length - 1):
+            self.max_score_alignments.append(Score(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+            for i in range(gapped_length - compare_length):
                 extended_piece = self.shift(extended_piece)
-                self.min_edit_alignments.append(
-                    EditDistance(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
-                # self.comparison_piece = copy.deepcopy(self.shift(extended_piece))
-                # self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
-        # elif gapped_length < compare_length:
-        #     self.gapped_piece = self.extend(self.gapped_piece, self.comparison_piece)
-        #     self.min_edit_alignments = EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1)
-        #     for i in range(gapped_length - 1):
-        #         self.gapped_piece = copy.deepcopy(self.shift(extended_piece))
+                self.max_score_alignments.append(
+                    Score(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+        elif gapped_length < compare_length:
+            extended_piece = copy.deepcopy(self.extend(self.gapped_piece, self.comparison_piece))
+            print extended_piece
+            print self.comparison_piece
+            self.max_score_alignments.append(Score(extended_piece, self.comparison_piece, self.gapped_bar_num - 1))
+            print ""
+            for i in range(compare_length - gapped_length):
+                extended_piece = self.shift(extended_piece)
+                print extended_piece
+                print self.comparison_piece
+                self.max_score_alignments.append(
+                    Score(extended_piece, self.comparison_piece, self.gapped_bar_num - 1 + i))
+                print ""
 
-    # self.min_edit_alignments.append(EditDistance(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
-
-    def extend(self, shorter, longer):
+    @staticmethod
+    def extend(shorter, longer):
         difference = len(longer) - len(shorter)
         extended_arr = [''] * difference
         return shorter + extended_arr
 
-    def shift(self, piece):
+    @staticmethod
+    def shift(piece):
         swap = piece.pop()
         piece = [swap] + piece
         return piece
 
-class EditDistance:
-    edit_distance = -1
+
+class Score:
+    alignment_score = -1
     replacing_arr_index = 0
     actual_replaced_bar_num = 0
     replaced_bar = '    '
@@ -88,10 +101,25 @@ class EditDistance:
 
     def __init__(self, gapped, comparison, adjust):
         self.replaced_bar = comparison[adjust]
-        self.edit_distance = self.get_edit_distance(gapped, comparison)
+        self.alignment_score = self.get_alignment_score(gapped, comparison)
+        print "Alignment Score: ", self.alignment_score
+        print "Replaced Bar: ", self.replaced_bar
+
     # def _get_replaced_bar_num(self):
     #     number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
     #     return number
+
+    @staticmethod
+    def get_alignment_score(gapped, comparison):
+        # match score; if seq1(i) == seq2(i)
+        # mismatch score; if seq1(i) != seq2(i)
+        score = 0
+
+        for i in range(len(gapped)):
+            if gapped[i] == comparison[i]:
+                score += 1
+
+        return score
 
     def get_edit_distance(self, gapped, comparison):
         n = len(gapped)
@@ -113,15 +141,18 @@ class EditDistance:
 
         return distance[n][m]
 
-    def _subst_cost(self, x, y):
+    @staticmethod
+    def _subst_cost(x, y):
         if x == y:
             return 0
         else:
             return 2
 
+    @staticmethod
     def _insert_cost(self, x):
         return 1
 
+    @staticmethod
     def _delete_cost(self, x):
         return 1
 
@@ -172,12 +203,19 @@ def main():
     # database = Corpus("path-list.txt", "parsable-path-list.txt")
     # database.fill_database()
 
-    ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
-    compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/test1.xml')
-    # align = SimpleAlignment(ground_truth, compare, 'rhythm')
-    # print 'edit distance: ', align.min_edit_obj.edit_distance
-    # print 'replaced bar: ', align.
-    # ground_truth.create_gap(3)min_edit_obj.replaced_bar
-# print 'replaced bar number: ', align.min_edit_obj.actual_replaced_bar_num
+    ground_truth = musicXML_parsing.MusicXMLParsing(
+        '../musicXML/palestrina/Agnus-Dei-1_Palestrina-Giovanni-Pierluigi-da_file1.krn')
+    compare = musicXML_parsing.MusicXMLParsing(
+        '../musicXML/palestrina/Agnus-Dei-2_Palestrina-Giovanni-Pierluigi-da_file1.krn')
+    # ground_truth = musicXML_parsing.MusicXMLParsing('../musicXML/tests/twinkle-twinkle.xml')
+    # compare = musicXML_parsing.MusicXMLParsing('../musicXML/tests/test1.xml')
+
+    # print ground_truth.rhythm_hash
+    # print compare.rhythm_hash
+
+    align = SimpleAlignment(ground_truth, compare, 'rhythm', 3)
+    # print 'edit distance: ', align.min_edit_obj.alignment_score
+    print 'replaced bar: ', align.max_score_obj.replaced_bar
+
 
 main()
