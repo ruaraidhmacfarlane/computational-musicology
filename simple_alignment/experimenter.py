@@ -1,6 +1,5 @@
-import datetime
 import copy
-import os
+import numpy
 import datetime
 import simple_alignments
 import musicXML_parsing
@@ -38,7 +37,8 @@ class Experimenter:
         naive_result = copy.deepcopy(ground_truth)
         naive_result.fill_gap(self.gapped_bar_num, max_alignment.max_score_obj.replaced_bar, self.mode)
         result = self.get_edit_distance(ground_truth, naive_result)
-        self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
+        # self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
+        self.print_output(ground_truth, naive_result, max_alignment.comparison_parse, result)
 
     def get_edit_distance(self, gapped_parse, comparison_parse):
         if self.mode == "rhythm":
@@ -64,7 +64,9 @@ class Experimenter:
                                      distance[i][j - 1] + 1,
                                      distance[i - 1][j - 1] + self._subst_cost(comparison[j - 1], gapped[i - 1]))
 
-        return distance[n][m]
+        max_value = numpy.amax(distance)
+        percentage = ((max_value - distance[n][m]) / max_value) * 100
+        return percentage
 
     @staticmethod
     def _subst_cost(x, y):
@@ -83,7 +85,6 @@ class Experimenter:
 
     def write_output_file(self, ground, similar_piece, aligned_piece, result):
         filename = self.output_file_path
-        # print filename
         f = open(filename , 'w')
         f.write("Experiment Name: " + self.create_output_file(self.experiment_name) + "\n")
         f.write("Piece Name: " + ground.name + "\n")
@@ -95,10 +96,32 @@ class Experimenter:
         f.write("[" + ", ".join(similar_piece.rhythm_hash) + "]" + "\n\n")
         f.write("TAKEN FROM PIECE: " + aligned_piece.name + "\n")
         f.write("[" + ", ".join(aligned_piece.rhythm_hash) + "]" + "\n\n")
-        f.write("\nEdit Distance: " + str(result) + "\n")
+        f.write("\nEdit Distance: " + str(result) + "%\n")
         f.write("Actual Bar: " + ground.rhythm_hash[self.gapped_bar_num - 1] + "\n")
         f.write("Replaced Bar: " + similar_piece.rhythm_hash[self.gapped_bar_num - 1] + "\n")
         f.close()
+
+    def print_output(self, ground, similar_piece, aligned_piece, result):
+        filename = self.output_file_path
+        print filename
+        print "Experiment Name: ", self.create_output_file(self.experiment_name)
+        print "Piece Name: ", ground.name
+        print "Missing Bar Number: ", self.gapped_bar_num
+        print "\n-------\nRESUlTS\n-------\n"
+        print "GOLD STANDARD: "
+        # print ground.rhythm_hash
+        print ground.parsons_code
+        print "RESULTING PIECE: "
+        # print similar_piece.rhythm_hash
+        print similar_piece.parsons_code
+        print "TAKEN FROM PIECE: ", aligned_piece.name
+        # print aligned_piece.rhythm_hash
+        print similar_piece.parsons_code
+        print "\nEdit Distance: ", result
+        # print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
+        print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
+        # print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
+        print "Replaced Bar: ", similar_piece.parsons_code[self.gapped_bar_num - 1]
 
     @staticmethod
     def get_max_score_alignment(all_alignments):
@@ -118,8 +141,9 @@ class Experimenter:
 
 
 def main():
-    result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment", 2, "rhythm")
+    # result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-rhythm", 2, "rhythm")
+    # result.run_simple_alignment()
+    result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-parson", 2, "parson")
     result.run_simple_alignment()
-
 
 main()
