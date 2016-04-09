@@ -16,9 +16,9 @@ class MusicXMLParsing:
     GAP_LENGTH = 1
 
     def __init__(self, path):
+        self.name = self._get_filename(path)
         if (self.is_kern(path)):
             path = music21.converter.parse(path).write('musicxml')
-        self.name = self._get_filename(path)
         self.parsed_score = music21.converter.parse(path)
         # self.parsed_score.show()
         # self.parsed_work = music21.parseWork(path)
@@ -45,6 +45,11 @@ class MusicXMLParsing:
         else:
             sys.exit("Error: Cannot create a gap, bar is out of range of music")
 
+    def fill_gap(self, bar_num, bar, mode):
+        if mode == "rhythm":
+            self.rhythm_hash[bar_num - 1] = bar
+        elif mode == "parson":
+            self.parsons_code[bar_num - 1] = bar
     """
 	u = "up," if the note is higher than the previous note
 	d = "down," if the note is lower than the previous note
@@ -96,5 +101,5 @@ class MusicXMLParsing:
         split_name = path.split('/')
         directory_len = len(split_name)
         filename = split_name[directory_len - 1].split('.')
-        name = filename[1]
+        name = filename[0]
         return name

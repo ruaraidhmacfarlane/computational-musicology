@@ -112,21 +112,6 @@ class Score:
 
         return score
 
-    @staticmethod
-    def _subst_cost(x, y):
-        if x == y:
-            return 0
-        else:
-            return 2
-
-    @staticmethod
-    def _insert_cost(self, x):
-        return 1
-
-    @staticmethod
-    def _delete_cost(self, x):
-        return 1
-
 
 class Corpus:
     old_corpus_file = ""
