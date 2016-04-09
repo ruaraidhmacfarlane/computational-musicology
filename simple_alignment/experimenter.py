@@ -1,6 +1,7 @@
 import datetime
 import copy
 import os
+import datetime
 import simple_alignments
 import musicXML_parsing
 
@@ -15,7 +16,8 @@ class Experimenter:
         self.gapped_bar_num = bar
         self.corpus_path = file_path
         self.mode = mode
-        self.output_file_path = "../results/" + self.create_output_file(experiment_name)
+        self.output_file_path = "../results/" + self.create_output_file(experiment_name) + ".txt"
+        self.experiment_name = experiment_name
 
     def run_simple_alignment(self):
         piece_list = open(self.corpus_path, "r")
@@ -80,18 +82,23 @@ class Experimenter:
         return 1
 
     def write_output_file(self, ground, similar_piece, aligned_piece, result):
-        print "Piece Name: ", ground.name
-        print "Missing Bar Number: ", self.gapped_bar_num
-        print "\n-------\nRESUlTS\n--\n"
-        print "GOLD STANDARD: "
-        print ground.rhythm_hash
-        print "RESULTING PIECE: "
-        print similar_piece.rhythm_hash
-        print "TAKEN FROM PIECE: ", aligned_piece.name
-        print aligned_piece.rhythm_hash
-        print "\nEdit Distance: ", result
-        print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
-        print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
+        filename = self.output_file_path
+        # print filename
+        f = open(filename , 'w')
+        f.write("Experiment Name: " + self.create_output_file(self.experiment_name) + "\n")
+        f.write("Piece Name: " + ground.name + "\n")
+        f.write("Missing Bar Number: " + str(self.gapped_bar_num) + "\n")
+        f.write("\n-------\nRESUlTS\n-------\n")
+        f.write("GOLD STANDARD: " + "\n")
+        f.write("[" + ", ".join(ground.rhythm_hash) + "]" + "\n\n")
+        f.write("RESULTING PIECE: " + "\n")
+        f.write("[" + ", ".join(similar_piece.rhythm_hash) + "]" + "\n\n")
+        f.write("TAKEN FROM PIECE: " + aligned_piece.name + "\n")
+        f.write("[" + ", ".join(aligned_piece.rhythm_hash) + "]" + "\n\n")
+        f.write("\nEdit Distance: " + str(result) + "\n")
+        f.write("Actual Bar: " + ground.rhythm_hash[self.gapped_bar_num - 1] + "\n")
+        f.write("Replaced Bar: " + similar_piece.rhythm_hash[self.gapped_bar_num - 1] + "\n")
+        f.close()
 
     @staticmethod
     def get_max_score_alignment(all_alignments):
@@ -105,8 +112,8 @@ class Experimenter:
 
     @staticmethod
     def create_output_file(name):
-        time = datetime.datetime.now().time()
-        filename = time.strftime("%Y-%m-%d %H:%M:%S") + name
+        time = datetime.datetime.now()
+        filename = "%s-%s-%s" % (time.day, time.month, time.year) + "_%s-%s-%s" % (time.hour, time.min, time.second) + "_" + name
         return filename
 
 
