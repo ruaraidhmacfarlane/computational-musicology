@@ -20,7 +20,7 @@ class SimpleAlignment:
 
     def __init__(self, gapped, comparison, feat, gap_num):
         self.attr = feat
-        self.gapped_parse = copy.deepcopy(gapped)
+        self.gapped_parse = gapped
         self.comparison_parse = copy.deepcopy(comparison)
         self.gapped_parse.create_gap(gap_num)
         self.gapped_bar_num = gap_num

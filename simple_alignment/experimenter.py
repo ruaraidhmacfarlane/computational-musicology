@@ -1,6 +1,5 @@
 import datetime
 import copy
-import time
 import os
 import simple_alignments
 import musicXML_parsing
@@ -24,26 +23,20 @@ class Experimenter:
         first_line = first_line.rstrip()
         piece_list.close()
         ground_truth = musicXML_parsing.MusicXMLParsing(first_line)
+        gapped = copy.deepcopy(ground_truth)
         alignments = []
         with open(self.corpus_path) as corpus:
             for path in corpus:
-                # i += 1
-                # print "Path", path
-                # print "First line", first_line
                 path = path.rstrip()
                 if path != first_line:
                     piece = musicXML_parsing.MusicXMLParsing(path)
                     alignments.append(
-                        simple_alignments.SimpleAlignment(ground_truth, piece, self.mode, self.gapped_bar_num))
-                else:
-                    print "Does this happen?"
+                        simple_alignments.SimpleAlignment(gapped, piece, self.mode, self.gapped_bar_num))
         max_alignment = self.get_max_score_alignment(alignments)
-        print max_alignment.max_score_obj.replaced_bar
-
         naive_result = copy.deepcopy(ground_truth)
         naive_result.fill_gap(self.gapped_bar_num, max_alignment.max_score_obj.replaced_bar, self.mode)
         result = self.get_edit_distance(ground_truth, naive_result)
-        self.write_output_file(ground_truth, naive_result, result)
+        self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
 
     def get_edit_distance(self, gapped_parse, comparison_parse):
         if self.mode == "rhythm":
@@ -86,23 +79,19 @@ class Experimenter:
     def _delete_cost(x):
         return 1
 
-    def write_output_file(self, ground, similar_piece, result):
-        string = ""
+    def write_output_file(self, ground, similar_piece, aligned_piece, result):
         print "Piece Name: ", ground.name
-        string += "\n"
         print "Missing Bar Number: ", self.gapped_bar_num
-        print "\n--\nRESUlTS\n--\n"
-        print ground.name
-        string += "\n"
+        print "\n-------\nRESUlTS\n--\n"
+        print "GOLD STANDARD: "
         print ground.rhythm_hash
-        string += "\n"
-        print similar_piece.name
-        string += "\n"
+        print "RESULTING PIECE: "
         print similar_piece.rhythm_hash
+        print "TAKEN FROM PIECE: ", aligned_piece.name
+        print aligned_piece.rhythm_hash
         print "\nEdit Distance: ", result
-        print "\nActual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
-        print "\nReplaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
-        # print string
+        print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
+        print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
 
     @staticmethod
     def get_max_score_alignment(all_alignments):
