@@ -64,7 +64,6 @@ class SimpleAlignment:
         elif gapped_length < compare_length:
             extended_piece = copy.deepcopy(self.extend(self.gapped_piece, self.comparison_piece))
             self.max_score_alignments.append(Score(extended_piece, self.comparison_piece, self.gapped_bar_num - 1))
-            print ""
             for i in range(compare_length - gapped_length):
                 extended_piece = self.shift(extended_piece)
                 self.max_score_alignments.append(
@@ -94,8 +93,8 @@ class Score:
     def __init__(self, gapped, comparison, adjust):
         self.replaced_bar = comparison[adjust]
         self.alignment_score = self.get_alignment_score(gapped, comparison)
-        print "Alignment Score: ", self.alignment_score
-        print "Replaced Bar: ", self.replaced_bar
+        # print "Alignment Score: ", self.alignment_score
+        # print "Replaced Bar: ", self.replaced_bar
 
     # def _get_replaced_bar_num(self):
     #     number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
