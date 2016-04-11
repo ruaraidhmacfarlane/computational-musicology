@@ -19,6 +19,8 @@ class MusicXMLParsing:
         self.name = self._get_filename(path)
         if (self.is_kern(path)):
             path = music21.converter.parse(path).write('musicxml')
+        if (self.is_midi(path)):
+            path = music21.converter.parse(path).write('musicxml')
         self.parsed_score = music21.converter.parse(path)
         # self.parsed_score.show()
         # self.parsed_work = music21.parseWork(path)
@@ -26,14 +28,27 @@ class MusicXMLParsing:
         self.length = len(self.rhythm_hash)
         # self.pitch_hash = self._hash_pitches()
         self.parsons_code = self._parsons_code()
+        # print self.rhythm_hash
+        # print self.parsons_code
+
         self.parsed_score = None
 
-    def is_kern(self, path_name):
+    @staticmethod
+    def is_kern(path_name):
         split_path = path_name.split('.')
         if split_path[-1] == 'krn':
             return True
         else:
             return False
+
+    @staticmethod
+    def is_midi(path_name):
+        split_path = path_name.split('.')
+        if split_path[-1] == 'mid':
+            return True
+        else:
+            return False
+
 
     def create_gap(self, bar):
         if bar <= len(self.rhythm_hash):
@@ -58,6 +73,7 @@ class MusicXMLParsing:
 	"""
 
     def _parsons_code(self):
+        print "Im parson code function fix me"
         contour_arr = []
         measure_map = self.parsed_score.parts[0].measureOffsetMap()
         measures = sorted(measure_map)

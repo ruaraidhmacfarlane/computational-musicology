@@ -130,9 +130,9 @@ class Corpus:
 
     def list_dir(self):
         old_corpus = open(self.old_corpus_file, "w")
-        for file in os.listdir("../musicXML/palestrina"):
-            if file.endswith(".krn") or file.endswith(".xml"):
-                old_corpus.write("../musicXML/palestrina/" + file + "\n")
+        for file in os.listdir("../musicXML/bach"):
+            if file.endswith(".krn") or file.endswith(".xml") or file.endswith(".mid"):
+                old_corpus.write("../musicXML/bach/" + file + "\n")
         old_corpus.close()
 
     def clean(self):
@@ -142,14 +142,15 @@ class Corpus:
             for path in corpus:
                 line_num += 1
                 path = path.rstrip()
-                print 'parsing line ', line_num
+                # print 'parsing line ', line_num
                 try:
                     musicXML_parsing.MusicXMLParsing(path)
                     new_corpus.write(path + "\n")
+                    print 'Parsed', path
                 except AttributeError:
                     print '%s is a bad score', path
                 except music21.exceptions21.StreamException:
                     print '%s is a not 4/4', path
-                print 'Parsed', path
+
 
         new_corpus.close()

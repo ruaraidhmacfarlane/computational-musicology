@@ -3,6 +3,7 @@ import numpy
 import datetime
 import simple_alignments
 import musicXML_parsing
+import music21
 
 
 class Experimenter:
@@ -33,6 +34,8 @@ class Experimenter:
                     piece = musicXML_parsing.MusicXMLParsing(path)
                     alignments.append(
                         simple_alignments.SimpleAlignment(gapped, piece, self.mode, self.gapped_bar_num))
+                else:
+                    print "skipped the match"
         max_alignment = self.get_max_score_alignment(alignments)
         naive_result = copy.deepcopy(ground_truth)
         naive_result.fill_gap(self.gapped_bar_num, max_alignment.max_score_obj.replaced_bar, self.mode)
@@ -66,7 +69,8 @@ class Experimenter:
 
         max_value = numpy.amax(distance)
         percentage = ((max_value - distance[n][m]) / max_value) * 100
-        return percentage
+        # return percentage
+        return distance[n][m]
 
     @staticmethod
     def _subst_cost(x, y):
@@ -109,19 +113,19 @@ class Experimenter:
         print "Missing Bar Number: ", self.gapped_bar_num
         print "\n-------\nRESUlTS\n-------\n"
         print "GOLD STANDARD: "
-        # print ground.rhythm_hash
-        print ground.parsons_code
+        print ground.rhythm_hash
+        # print ground.parsons_code
         print "RESULTING PIECE: "
-        # print similar_piece.rhythm_hash
-        print similar_piece.parsons_code
+        print similar_piece.rhythm_hash
+        # print similar_piece.parsons_code
         print "TAKEN FROM PIECE: ", aligned_piece.name
-        # print aligned_piece.rhythm_hash
-        print similar_piece.parsons_code
+        print aligned_piece.rhythm_hash
+        # print similar_piece.parsons_code
         print "\nEdit Distance: ", result
-        # print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
-        print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
-        # print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
-        print "Replaced Bar: ", similar_piece.parsons_code[self.gapped_bar_num - 1]
+        print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
+        # print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
+        print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
+        # print "Replaced Bar: ", similar_piece.parsons_code[self.gapped_bar_num - 1]
 
     @staticmethod
     def get_max_score_alignment(all_alignments):
@@ -136,14 +140,42 @@ class Experimenter:
     @staticmethod
     def create_output_file(name):
         time = datetime.datetime.now()
-        filename = "%s-%s-%s" % (time.day, time.month, time.year) + "_%s-%s-%s" % (time.hour, time.min, time.second) + "_" + name
+        filename = "%s-%s-%s" % (time.day, time.month, time.year) + "_%s-%s-%s" % (time.hour, time.minute, time.second) + "_" + name
         return filename
 
+    def is_duplicate(self):
+        # you should get all the pieces parsed for rhyhtm then just perform the edit distance on all of them
+        # new_corpus = open("../corpus/duplicate-list.txt", "w")
+        with open(self.corpus_path) as corpus:
+            for path_i in corpus:
+                path_i = path_i.rstrip()
+                parsed_i =  musicXML_parsing.MusicXMLParsing(path_i)
+                for path_j in corpus:
+                    path_j = path_j.rstrip()
+                    if path_i != path_j:
+                        parsed_j = musicXML_parsing.MusicXMLParsing(path_j)
+                        difference = self.get_edit_distance(parsed_i, parsed_j)
+                        if difference == 0:
+                            # print "%s is the same as %s" % (parsed_i.name, parsed_j.name)
+                            print path_j
+                            # new_corpus.write(path_j + "\n")
+                        # else:
+                        #     print "--"
+                            # print "%s is different from %s" % (parsed_i.name, parsed_j.name)
+        # new_corpus.close()
 
 def main():
-    # result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-rhythm", 2, "rhythm")
+    # result = Experimenter("../corpus/parsable-path-list.txt", "simple-alignment-rhythm", 2, "rhythm")
+    # result.is_duplicate()
     # result.run_simple_alignment()
-    result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-parson", 2, "parson")
-    result.run_simple_alignment()
+    # result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-parson", 2, "parson")
+    # result.run_simple_alignment()
 
+    # db = simple_alignments.Corpus("../corpus/bach-path-list.txt", "../corpus/bach-parsable-path-list.txt")
+    # db.list_dir()
+    # db.clean()
+    x = musicXML_parsing.MusicXMLParsing("../musicXML/bach/Ach-bleib-bei-uns-Herr-Jesu-Christ-BWV-253_Bach-Johann-Sebastian_file1.mid")
+    y = musicXML_parsing.MusicXMLParsing("../musicXML/bach/Ach-Gott-erhor-mein-Seufzen-BWV-254_Bach-Johann-Sebastian_file1.mid")
+    test = simple_alignments.SimpleAlignment(x,y,"rhythm",2)
+    print test.alignment_score
 main()
