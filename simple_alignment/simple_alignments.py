@@ -2,6 +2,7 @@ import music21
 import copy
 import musicXML_parsing
 import os
+import numpy
 
 
 class SimpleAlignment:
@@ -112,6 +113,44 @@ class Score:
 
         return score
 
+    def get_edit_distance(self, x, y):
+        n = len(x)
+        m = len(y)
+
+        distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
+
+        for i in range(1, n + 1):
+            distance[i][0] = distance[i - 1][0] + self._insert_cost(x[i - 1])
+
+        for j in range(1, m + 1):
+            distance[0][j] = distance[0][j - 1] + self._delete_cost(y[j - 1])
+
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                distance[i][j] = min(distance[i - 1][j] + 1,
+                                     distance[i][j - 1] + 1,
+                                     distance[i - 1][j - 1] + self._subst_cost(x[j - 1], y[i - 1]))
+
+        max_value = numpy.amax(distance)
+        percentage = ((max_value - distance[n][m]) / max_value) * 100
+        # return percentage
+        # print distance
+        return distance[n][m]
+
+    @staticmethod
+    def _subst_cost(x, y):
+        if x == y:
+            return 0
+        else:
+            return 2
+
+    @staticmethod
+    def _insert_cost(x):
+        return 1
+
+    @staticmethod
+    def _delete_cost(x):
+        return 1
 
 class Corpus:
     old_corpus_file = ""
@@ -130,9 +169,11 @@ class Corpus:
 
     def list_dir(self):
         old_corpus = open(self.old_corpus_file, "w")
-        for file in os.listdir("../musicXML/bach"):
-            if file.endswith(".krn") or file.endswith(".xml") or file.endswith(".mid"):
-                old_corpus.write("../musicXML/bach/" + file + "\n")
+        path = "../musicXML/palestrina/Humdrum"
+        for dir in os.listdir(path):
+            for file in os.listdir(path + "/" + dir):
+                if file.endswith(".krn") or file.endswith(".xml") or file.endswith(".mid"):
+                    old_corpus.write("../musicXML/palestrina/Humdrum/" + dir + "/" + file + "\n")
         old_corpus.close()
 
     def clean(self):
@@ -142,15 +183,13 @@ class Corpus:
             for path in corpus:
                 line_num += 1
                 path = path.rstrip()
-                # print 'parsing line ', line_num
+                print 'Line: ', line_num
                 try:
                     musicXML_parsing.MusicXMLParsing(path)
                     new_corpus.write(path + "\n")
                     print 'Parsed', path
                 except AttributeError:
-                    print '%s is a bad score', path
+                    print '%s is a bad score' % path
                 except music21.exceptions21.StreamException:
-                    print '%s is a not 4/4', path
-
-
+                    print '%s is a not 4/4' % path
         new_corpus.close()

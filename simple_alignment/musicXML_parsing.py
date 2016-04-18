@@ -17,9 +17,7 @@ class MusicXMLParsing:
 
     def __init__(self, path):
         self.name = self._get_filename(path)
-        if (self.is_kern(path)):
-            path = music21.converter.parse(path).write('musicxml')
-        if (self.is_midi(path)):
+        if self.is_kern(path) or self.is_midi(path):
             path = music21.converter.parse(path).write('musicxml')
         self.parsed_score = music21.converter.parse(path)
         # self.parsed_score.show()
@@ -30,7 +28,6 @@ class MusicXMLParsing:
         self.parsons_code = self._parsons_code()
         # print self.rhythm_hash
         # print self.parsons_code
-
         self.parsed_score = None
 
     @staticmethod
@@ -49,7 +46,6 @@ class MusicXMLParsing:
         else:
             return False
 
-
     def create_gap(self, bar):
         if bar <= len(self.rhythm_hash):
             self.gapped_bar_num = bar
@@ -65,6 +61,7 @@ class MusicXMLParsing:
             self.rhythm_hash[bar_num - 1] = bar
         elif mode == "parson":
             self.parsons_code[bar_num - 1] = bar
+
     """
 	u = "up," if the note is higher than the previous note
 	d = "down," if the note is lower than the previous note
@@ -73,10 +70,10 @@ class MusicXMLParsing:
 	"""
 
     def _parsons_code(self):
-        print "Im parson code function fix me"
         contour_arr = []
         measure_map = self.parsed_score.parts[0].measureOffsetMap()
         measures = sorted(measure_map)
+        # print "Measure map: \n", measures
         for m in measures:
             bar_string = ""
             # maybe first bars are rests
@@ -117,5 +114,5 @@ class MusicXMLParsing:
         split_name = path.split('/')
         directory_len = len(split_name)
         filename = split_name[directory_len - 1].split('.')
-        name = filename[0]
+        name = split_name[directory_len - 2] + "-" +filename[0]
         return name

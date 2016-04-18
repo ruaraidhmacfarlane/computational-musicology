@@ -164,18 +164,74 @@ class Experimenter:
                             # print "%s is different from %s" % (parsed_i.name, parsed_j.name)
         # new_corpus.close()
 
+class Evaluator:
+    piece_x = None
+    piece_y = None
+    edit_distance = 0
+
+    def __init__(self, piece_x, piece_y):
+        self.piece_x = piece_x
+        self.piece_y = piece_y
+        self.edit_distance = self.get_edit_distance()
+
+        print piece_x
+        print piece_y
+        print "Edit Distance: ", self.edit_distance
+
+    def get_edit_distance(self):
+        gapped = self.piece_x[0]
+        comparison = self.piece_y[0]
+        n = len(gapped)
+        m = len(comparison)
+
+        distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
+
+        for i in range(1, n + 1):
+            distance[i][0] = distance[i - 1][0] + self._insert_cost(gapped[i - 1])
+
+        for j in range(1, m + 1):
+            distance[0][j] = distance[0][j - 1] + self._delete_cost(comparison[j - 1])
+
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                distance[i][j] = min(distance[i - 1][j] + 1,
+                                     distance[i][j - 1] + 1,
+                                     distance[i - 1][j - 1] + self._subst_cost(comparison[j - 1], gapped[i - 1]))
+
+        max_value = numpy.amax(distance)
+        percentage = ((max_value - distance[n][m]) / max_value) * 100
+        # return percentage
+        # print distance
+        return distance[n][m]
+
+    @staticmethod
+    def _subst_cost(x, y):
+        if x == y:
+            return 0
+        else:
+            return 2
+
+    @staticmethod
+    def _insert_cost(x):
+        return 1
+
+    @staticmethod
+    def _delete_cost(x):
+        return 1
 def main():
-    # result = Experimenter("../corpus/parsable-path-list.txt", "simple-alignment-rhythm", 2, "rhythm")
+    result = Experimenter("../corpus/palestrina.txt", "simple-alignment-rhythm", 2, "rhythm")
+    result.run_simple_alignment()
     # result.is_duplicate()
-    # result.run_simple_alignment()
     # result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-parson", 2, "parson")
     # result.run_simple_alignment()
 
-    # db = simple_alignments.Corpus("../corpus/bach-path-list.txt", "../corpus/bach-parsable-path-list.txt")
+    # db = simple_alignments.Corpus("../corpus/palestrina-path-list-v2.txt", "../corpus/palestrina.txt")
     # db.list_dir()
     # db.clean()
-    x = musicXML_parsing.MusicXMLParsing("../musicXML/bach/Ach-bleib-bei-uns-Herr-Jesu-Christ-BWV-253_Bach-Johann-Sebastian_file1.mid")
-    y = musicXML_parsing.MusicXMLParsing("../musicXML/bach/Ach-Gott-erhor-mein-Seufzen-BWV-254_Bach-Johann-Sebastian_file1.mid")
-    test = simple_alignments.SimpleAlignment(x,y,"rhythm",2)
-    print test.alignment_score
+
+    # print x.rhythm_hash
+    # print y.rhythm_hash
+    # test = simple_alignments.SimpleAlignment(x,y,"rhythm",2)
+    # print test.alignment_score
+    # x = musicXML_parsing.MusicXMLParsing("../musicXML/palestrina/Agnus-Dei-1_Palestrina-Giovanni-Pierluigi-da_file1.krn")
 main()
