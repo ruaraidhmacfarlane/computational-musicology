@@ -32,16 +32,14 @@ class Experimenter:
                 path = path.rstrip()
                 if path != first_line:
                     piece = musicXML_parsing.MusicXMLParsing(path)
-                    alignments.append(
-                        simple_alignments.SimpleAlignment(gapped, piece, self.mode, self.gapped_bar_num))
-                else:
-                    print "skipped the match"
+                    alignments.append(simple_alignments.SimpleAlignment(gapped, piece, self.mode, self.gapped_bar_num))
         max_alignment = self.get_max_score_alignment(alignments)
+        # print "#### max alignment ", max_alignment
         naive_result = copy.deepcopy(ground_truth)
-        naive_result.fill_gap(self.gapped_bar_num, max_alignment.max_score_obj.replaced_bar, self.mode)
+        naive_result.fill_gap(self.gapped_bar_num, max_alignment.replaced_bar, self.mode)
         result = self.get_edit_distance(ground_truth, naive_result)
         # self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
-        self.print_output(ground_truth, naive_result, max_alignment.comparison_parse, result)
+        self.print_output(ground_truth, naive_result, result)
 
     def get_edit_distance(self, gapped_parse, comparison_parse):
         if self.mode == "rhythm":
@@ -87,54 +85,15 @@ class Experimenter:
     def _delete_cost(x):
         return 1
 
-    def write_output_file(self, ground, similar_piece, aligned_piece, result):
-        filename = self.output_file_path
-        f = open(filename , 'w')
-        f.write("Experiment Name: " + self.create_output_file(self.experiment_name) + "\n")
-        f.write("Piece Name: " + ground.name + "\n")
-        f.write("Missing Bar Number: " + str(self.gapped_bar_num) + "\n")
-        f.write("\n-------\nRESUlTS\n-------\n")
-        f.write("GOLD STANDARD: " + "\n")
-        f.write("[" + ", ".join(ground.rhythm_hash) + "]" + "\n\n")
-        f.write("RESULTING PIECE: " + "\n")
-        f.write("[" + ", ".join(similar_piece.rhythm_hash) + "]" + "\n\n")
-        f.write("TAKEN FROM PIECE: " + aligned_piece.name + "\n")
-        f.write("[" + ", ".join(aligned_piece.rhythm_hash) + "]" + "\n\n")
-        f.write("\nEdit Distance: " + str(result) + "%\n")
-        f.write("Actual Bar: " + ground.rhythm_hash[self.gapped_bar_num - 1] + "\n")
-        f.write("Replaced Bar: " + similar_piece.rhythm_hash[self.gapped_bar_num - 1] + "\n")
-        f.close()
-
-    def print_output(self, ground, similar_piece, aligned_piece, result):
-        filename = self.output_file_path
-        print filename
-        print "Experiment Name: ", self.create_output_file(self.experiment_name)
-        print "Piece Name: ", ground.name
-        print "Missing Bar Number: ", self.gapped_bar_num
-        print "\n-------\nRESUlTS\n-------\n"
-        print "GOLD STANDARD: "
-        print ground.rhythm_hash
-        # print ground.parsons_code
-        print "RESULTING PIECE: "
-        print similar_piece.rhythm_hash
-        # print similar_piece.parsons_code
-        print "TAKEN FROM PIECE: ", aligned_piece.name
-        print aligned_piece.rhythm_hash
-        # print similar_piece.parsons_code
-        print "\nEdit Distance: ", result
-        print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
-        # print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
-        print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
-        # print "Replaced Bar: ", similar_piece.parsons_code[self.gapped_bar_num - 1]
-
     @staticmethod
     def get_max_score_alignment(all_alignments):
-        max_score = all_alignments[0].alignment_score
-        best_alignment = all_alignments[0]
-        for obj in all_alignments:
-            if obj.alignment_score > max_score:
-                max_score = obj.alignment_score
-                best_alignment = obj
+        min_dist = all_alignments[0].max_score_alignments[0].alignment_score
+        best_alignment = all_alignments[0].max_score_alignments[0]
+        for outer_obj in all_alignments:
+            for inner_obj in outer_obj.max_score_alignments:
+                if inner_obj.alignment_score < min_dist and inner_obj.replaced_bar != '':
+                    min_dist = inner_obj.alignment_score
+                    best_alignment = inner_obj
         return best_alignment
 
     @staticmethod
@@ -163,6 +122,47 @@ class Experimenter:
                         #     print "--"
                             # print "%s is different from %s" % (parsed_i.name, parsed_j.name)
         # new_corpus.close()
+
+    def write_output_file(self, ground, similar_piece, result):
+        filename = self.output_file_path
+        f = open(filename, 'w')
+        f.write("Experiment Name: " + self.create_output_file(self.experiment_name) + "\n")
+        f.write("Piece Name: " + ground.name + "\n")
+        f.write("Missing Bar Number: " + str(self.gapped_bar_num) + "\n")
+        f.write("\n-------\nRESUlTS\n-------\n")
+        f.write("GOLD STANDARD: " + "\n")
+        f.write("[" + ", ".join(ground.rhythm_hash) + "]" + "\n\n")
+        f.write("RESULTING PIECE: " + "\n")
+        f.write("[" + ", ".join(similar_piece.rhythm_hash) + "]" + "\n\n")
+        # f.write("TAKEN FROM PIECE: " + aligned_piece.name + "\n")
+        # f.write("[" + ", ".join(aligned_piece.rhythm_hash) + "]" + "\n\n")
+        f.write("\nEdit Distance: " + str(result) + "%\n")
+        f.write("Actual Bar: " + ground.rhythm_hash[self.gapped_bar_num - 1] + "\n")
+        f.write("Replaced Bar: " + similar_piece.rhythm_hash[self.gapped_bar_num - 1] + "\n")
+        f.close()
+
+    def print_output(self, ground, similar_piece, result):
+        filename = self.output_file_path
+        print filename
+        print "Experiment Name: ", self.create_output_file(self.experiment_name)
+        print "Piece Name: ", ground.name
+        print "Missing Bar Number: ", self.gapped_bar_num
+        print "\n-------\nRESUlTS\n-------\n"
+        print "GOLD STANDARD: "
+        print ground.rhythm_hash
+        # print ground.parsons_code
+        print "RESULTING PIECE: "
+        print similar_piece.rhythm_hash
+        # print similar_piece.parsons_code
+        # print "TAKEN FROM PIECE: ", aligned_piece.name
+        # print aligned_piece.rhythm_hash
+        # print similar_piece.parsons_code
+        print "\nEdit Distance: ", result
+        print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
+        # print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
+        print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]
+        # print "Replaced Bar: ", similar_piece.parsons_code[self.gapped_bar_num - 1]
+
 
 class Evaluator:
     piece_x = None
@@ -218,6 +218,7 @@ class Evaluator:
     @staticmethod
     def _delete_cost(x):
         return 1
+
 def main():
     result = Experimenter("../corpus/palestrina.txt", "simple-alignment-rhythm", 2, "rhythm")
     result.run_simple_alignment()

@@ -34,7 +34,7 @@ class SimpleAlignment:
             self.comparison_piece = copy.deepcopy(self.comparison_parse).rhythm_hash
 
         self.base_align()
-        self.get_min_edit_obj()
+        # self.get_min_edit_obj()
 
     def get_min_edit_obj(self):
         align_obj = self.max_score_alignments[0]
@@ -87,13 +87,14 @@ class Score:
     alignment_score = -1
     replacing_arr_index = 0
     actual_replaced_bar_num = 0
-    replaced_bar = '    '
+    replaced_bar = ''
     adjust_index = -1
     comparison_obj = None
 
     def __init__(self, gapped, comparison, adjust):
         self.replaced_bar = comparison[adjust]
-        self.alignment_score = self.get_alignment_score(gapped, comparison)
+        # self.alignment_score = self.get_alignment_score(gapped, comparison)
+        self.alignment_score = self.get_alignment_distance(gapped, comparison)
         # print "Alignment Score: ", self.alignment_score
         # print "Replaced Bar: ", self.replaced_bar
 
@@ -101,40 +102,39 @@ class Score:
     #     number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
     #     return number
 
+    def get_alignment_distance(self, gapped, comparison):
+        distance = 0
+        for i in range(len(gapped)):
+            distance += self.get_edit_distance(gapped[i], comparison[i])
+        return distance
+
     @staticmethod
     def get_alignment_score(gapped, comparison):
         # match score; if seq1(i) == seq2(i)
         # mismatch score; if seq1(i) != seq2(i)
         score = 0
-
         for i in range(len(gapped)):
             if gapped[i] == comparison[i]:
                 score += 1
-
         return score
 
-    def get_edit_distance(self, x, y):
-        n = len(x)
-        m = len(y)
+    def get_edit_distance(self,target, source):
+        n = len(target)
+        m = len(source)
 
         distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
 
         for i in range(1, n + 1):
-            distance[i][0] = distance[i - 1][0] + self._insert_cost(x[i - 1])
+            distance[i][0] = distance[i - 1][0] + self._insert_cost(target[i - 1])
 
         for j in range(1, m + 1):
-            distance[0][j] = distance[0][j - 1] + self._delete_cost(y[j - 1])
+            distance[0][j] = distance[0][j - 1] + self._delete_cost(source[j - 1])
 
         for i in range(1, n + 1):
             for j in range(1, m + 1):
                 distance[i][j] = min(distance[i - 1][j] + 1,
                                      distance[i][j - 1] + 1,
-                                     distance[i - 1][j - 1] + self._subst_cost(x[j - 1], y[i - 1]))
-
-        max_value = numpy.amax(distance)
-        percentage = ((max_value - distance[n][m]) / max_value) * 100
-        # return percentage
-        # print distance
+                                     distance[i - 1][j - 1] + self._subst_cost(source[j - 1], target[i - 1]))
         return distance[n][m]
 
     @staticmethod
