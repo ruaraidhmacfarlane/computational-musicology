@@ -11,6 +11,7 @@ class Experimenter:
     output_file_path = ""
     mode = ""
     gapped_bar_num = 0
+    gapped_bar = ""
 
     def __init__(self, file_path, experiment_name, bar, mode):
         self.gapped_bar_num = bar
@@ -25,6 +26,11 @@ class Experimenter:
         first_line = first_line.rstrip()
         piece_list.close()
         ground_truth = musicXML_parsing.MusicXMLParsing(first_line)
+        if self.mode == "rhythm":
+            self.gapped_bar = ground_truth.rhythm_hash[self.gapped_bar_num - 1]
+        elif self.mode == "parson":
+            self.gapped_bar = ground_truth.parsons_code[self.gapped_bar_num - 1]
+        self.print_exp_info(ground_truth)
         gapped = copy.deepcopy(ground_truth)
         alignments = []
         with open(self.corpus_path) as corpus:
@@ -37,17 +43,28 @@ class Experimenter:
         # print "#### max alignment ", max_alignment
         naive_result = copy.deepcopy(ground_truth)
         naive_result.fill_gap(self.gapped_bar_num, max_alignment.replaced_bar, self.mode)
-        result = self.get_edit_distance(ground_truth, naive_result)
-        # self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
-        self.print_output(ground_truth, naive_result, result)
 
-    def get_edit_distance(self, gapped_parse, comparison_parse):
+        self.print_all_alignment_scores(alignments)
+
+        result = self.get_edit_distance(self.gapped_bar, naive_result[self.gapped_bar_num -1])
+        # self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
         if self.mode == "rhythm":
-            gapped = gapped_parse.rhythm_hash
-            comparison = comparison_parse.rhythm_hash
+            self.print_output(ground_truth, naive_result, max_alignment.target_piece_name,
+                              max_alignment.target_piece_feat, max_alignment.alignment_score, result)
         elif self.mode == "parson":
-            gapped = gapped_parse.parsons_code
-            comparison = comparison_parse.parsons_code
+            self.print_output(ground_truth, naive_result, max_alignment.target_piece_name,
+                              max_alignment.target_piece_feat, max_alignment.alignment_score, result)
+
+
+
+    def get_edit_distance(self, gapped, comparison):
+        # if self.mode == "rhythm":
+        #     gapped = gapped_parse.rhythm_hash[self.gapped_bar_num - 1]
+        #     comparison = comparison_parse.rhythm_hash[self.gapped_bar_num - 1]
+        # elif self.mode == "parson":
+        #     gapped = gapped_parse.parsons_code[self.gapped_bar_num - 1]
+        #     comparison = comparison_parse.parsons_code[self.gapped_bar_num - 1]
+
         n = len(gapped)
         m = len(comparison)
 
@@ -141,23 +158,44 @@ class Experimenter:
         f.write("Replaced Bar: " + similar_piece.rhythm_hash[self.gapped_bar_num - 1] + "\n")
         f.close()
 
-    def print_output(self, ground, similar_piece, result):
+    def print_exp_info(self, ground):
         filename = self.output_file_path
         print filename
         print "Experiment Name: ", self.create_output_file(self.experiment_name)
         print "Piece Name: ", ground.name
         print "Missing Bar Number: ", self.gapped_bar_num
+        print "Missing Bar: ", self.gapped_bar
+
+    def print_all_alignment_scores(self, all_alignments):
+        print "----------"
+        print "ALL SCORES"
+        print "----------"
+        for outer_obj in all_alignments:
+            print "Comparison Mass: ", outer_obj.comparison_name
+            shift_num = 0
+            for inner_obj in outer_obj.max_score_alignments:
+                print "   Shift: ", shift_num
+                if inner_obj.replaced_bar != '':
+                    print "     Score = ", inner_obj.alignment_score
+                    print "     Replaced Bar = ", inner_obj.replaced_bar
+                    result = self.get_edit_distance(self.gapped_bar, inner_obj.replaced_bar)
+                    print "     Edit Distance = ", result
+                else:
+                    print "     No Bar to replace"
+
+    def print_output(self, ground, similar_piece, comp_name, comp_feat, alignment_score, result):
         print "\n-------\nRESUlTS\n-------\n"
         print "GOLD STANDARD: "
         print ground.rhythm_hash
-        # print ground.parsons_code
-        print "RESULTING PIECE: "
-        print similar_piece.rhythm_hash
+        # # print ground.parsons_code
+        # print "RESULTING PIECE: "
+        # print similar_piece.rhythm_hash
         # print similar_piece.parsons_code
-        # print "TAKEN FROM PIECE: ", aligned_piece.name
-        # print aligned_piece.rhythm_hash
+        print "TAKEN FROM PIECE: ", comp_name
+        print comp_feat
         # print similar_piece.parsons_code
-        print "\nEdit Distance: ", result
+        print "\nAlignment Score: ", alignment_score
+        print "Edit Distance: ", result
         print "Actual Bar: ", ground.rhythm_hash[self.gapped_bar_num - 1]
         # print "Actual Bar: ", ground.parsons_code[self.gapped_bar_num - 1]
         print "Replaced Bar: ", similar_piece.rhythm_hash[self.gapped_bar_num - 1]

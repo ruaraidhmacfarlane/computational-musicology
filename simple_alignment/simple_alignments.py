@@ -7,6 +7,8 @@ import numpy
 
 class SimpleAlignment:
     attr = ''  # parson || rhythm
+    gapped_name = ""
+    comparison_name = ""
     gapped_parse = None
     comparison_parse = None
     gapped_piece = []
@@ -25,7 +27,8 @@ class SimpleAlignment:
         self.comparison_parse = copy.deepcopy(comparison)
         self.gapped_parse.create_gap(gap_num)
         self.gapped_bar_num = gap_num
-
+        self.gapped_name = gapped.name
+        self.comparison_name = comparison.name
         if self.attr == 'parson':
             self.gapped_piece = copy.deepcopy(self.gapped_parse).parsons_code
             self.comparison_piece = copy.deepcopy(self.comparison_parse).parsons_code
@@ -54,21 +57,21 @@ class SimpleAlignment:
         gapped_length = len(self.gapped_piece)
         compare_length = len(self.comparison_piece)
         if gapped_length == compare_length:
-            self.max_score_alignments.append(Score(self.gapped_piece, self.comparison_piece, self.gapped_bar_num - 1))
+            self.max_score_alignments.append(Score(self.gapped_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
         elif gapped_length > compare_length:
             extended_piece = copy.deepcopy(self.extend(self.comparison_piece, self.gapped_piece))
-            self.max_score_alignments.append(Score(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+            self.max_score_alignments.append(Score(self.gapped_piece, extended_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
             for i in range(gapped_length - compare_length):
                 extended_piece = self.shift(extended_piece)
                 self.max_score_alignments.append(
-                    Score(self.gapped_piece, extended_piece, self.gapped_bar_num - 1))
+                    Score(self.gapped_piece, extended_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
         elif gapped_length < compare_length:
             extended_piece = copy.deepcopy(self.extend(self.gapped_piece, self.comparison_piece))
-            self.max_score_alignments.append(Score(extended_piece, self.comparison_piece, self.gapped_bar_num - 1))
+            self.max_score_alignments.append(Score(extended_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
             for i in range(compare_length - gapped_length):
                 extended_piece = self.shift(extended_piece)
                 self.max_score_alignments.append(
-                    Score(extended_piece, self.comparison_piece, self.gapped_bar_num - 1 + i))
+                    Score(extended_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1 + i))
 
     @staticmethod
     def extend(shorter, longer):
@@ -90,8 +93,12 @@ class Score:
     replaced_bar = ''
     adjust_index = -1
     comparison_obj = None
+    target_piece_name = ""
+    target_piece_feat = ""
 
-    def __init__(self, gapped, comparison, adjust):
+    def __init__(self, gapped, comparison, target_name, adjust):
+        self.target_piece_name = target_name
+        self.target_piece_feat = comparison
         self.replaced_bar = comparison[adjust]
         # self.alignment_score = self.get_alignment_score(gapped, comparison)
         self.alignment_score = self.get_alignment_distance(gapped, comparison)
