@@ -18,6 +18,9 @@ class Experimenter:
     ground_truth = None
     result_parse = None
 
+    result_ground_shift = []
+    result_comparison_shift = []
+
     experiment_metric_result = 0
     experiment_replaced_bar = ""
 
@@ -38,6 +41,9 @@ class Experimenter:
 
         self.ground_truth = musicXML_parsing.MusicXMLParsing(self.ground_truth_path, self.mode)
         self.ground_truth.create_gap(self.gapped_bar_num)
+
+        self.result_ground_shift = []
+        self.result_comparison_shift = []
 
         self.experiment_metric_result = 0
         self.experiment_replaced_bar = ""
@@ -61,26 +67,25 @@ class Experimenter:
         self.create_result()
 
     def set_replacement_scorings(self):
-        metric = self.alignments[0].alignment_metric_result
-        replaced_bar = self.alignments[0].alignment_replaced_bar
-        comparison = self.alignments[0].comparison_parse
+        align_obj = self.alignments[0]
+        metric = align_obj.alignment_metric_result
         for align in self.alignments:
             if self.scoring_method == 0:
                 # max score
                 if align.alignment_metric_result > metric:
+                    align_obj = align
                     metric = align.alignment_metric_result
-                    replaced_bar = align.alignment_replaced_bar
-                    comparison = align.comparison_parse
             elif self.scoring_method == 1:
                 # min distance
-                if align.metric < metric:
+                if align.alignment_metric_result < metric:
+                    align_obj = align
                     metric = align.alignment_metric_result
-                    replaced_bar = align.alignment_replaced_bar
-                    comparison = align.comparison_parse
 
-        self.experiment_metric_result = metric
-        self.experiment_replaced_bar = replaced_bar
-        self.result_parse = comparison
+        self.experiment_metric_result = align_obj.alignment_metric_result
+        self.experiment_replaced_bar = align_obj.alignment_replaced_bar
+        self.result_parse = align_obj.comparison_parse
+        self.result_ground_shift = align_obj.alignment_gapped_feat
+        self.result_comparison_shift = align_obj.alignment_comparison_feat
 
     def create_result(self):
         if self.scoring_method == 0:
@@ -108,67 +113,60 @@ class Experimenter:
 
         overview.write(5, 1, self.ground_truth.name)
         overview.write(6, 1, self.result_parse.name)
+        overview.write(7, 1, "Metric")
+        overview.write(8, 1, "Total Metric")
 
-        max_length = max(self.ground_truth.length, self.result_parse.length)
-        # total_dist = 0
-        for i in range(max_length):
-            if i >= self.ground_truth.length - 1:
-                overview.write(6, i + 2, self.result_parse.feature[i])
-                # overview.write(6, i + 2, str(self.get_edit_distance("", comp_feat[i])))
-                # total_dist += self.get_edit_distance("", comp_feat[i])
-            elif i >= self.result_parse.length - 1:
-                overview.write(5, i + 2, self.ground_truth.feature[i])
-                # overview.write(6, i + 2, str(self.get_edit_distance(ground.rhythm_hash[i], "")))
-                # total_dist += self.get_edit_distance(ground.rhythm_hash[i], "")
-            else:
-                overview.write(5, i + 2, self.ground_truth.feature[i])
-                overview.write(6, i + 2, self.result_parse.feature[i])
-                # if ground.rhythm_hash[i] == comp_feat[i]:
-                #     overview.write(4, i + 2, ground.rhythm_hash[i], highlight_match)
-                #     overview.write(5, i + 2, comp_feat[i], highlight_match)
-                # else:
-                #     overview.write(5, i + 2, ground.rhythm_hash[i])
-                #     overview.write(6, i + 2, comp_feat[i])
-            #     overview.write(6, i + 2, str(self.get_edit_distance(ground.rhythm_hash[i], comp_feat[i])))
-            #     total_dist += self.get_edit_distance(ground.rhythm_hash[i], comp_feat[i])
-            # overview.write(7, i + 2, str(total_dist))
+        total_metric = 0
+        for i in range(len(self.result_ground_shift)):
+            overview.write(5, i + 2, self.result_ground_shift[i])
+            overview.write(6, i + 2, self.result_comparison_shift[i])
+            scorer = simple_alignments.Scorer(self.result_ground_shift[i], self.result_comparison_shift[i])
+            curr_metric = 0
+            if self.scoring_method == 0:
+                curr_metric = scorer.simple_score()
+            elif self.scoring_method == 1:
+                curr_metric = scorer.edit_distance()
+            total_metric += curr_metric
 
-        overview.write(8, 0, "Metric: ", header)
-        overview.write(9, 0, "Edit Distance: ", header)
-        overview.write(10, 0, "Actual Bar: ", header)
-        overview.write(11, 0, "Replaced Bar: ", header)
-        overview.write(8, 1, str(self.experiment_metric_result))
-        overview.write(9, 1, str(self.experiment_dist_result))
-        overview.write(10, 1, self.ground_truth.previous_feature_bar)
-        overview.write(11, 1, self.experiment_replaced_bar)
+            overview.write(7, i + 2, curr_metric)
+            overview.write(8, i + 2, total_metric)
 
-        # num_correct = 0
+        overview.write(10, 0, "Metric: ", header)
+        overview.write(11, 0, "Edit Distance: ", header)
+        overview.write(12, 0, "Actual Bar: ", header)
+        overview.write(13, 0, "Replaced Bar: ", header)
+        overview.write(10, 1, str(self.experiment_metric_result))
+        overview.write(11, 1, str(self.experiment_dist_result))
+        overview.write(12, 1, self.ground_truth.previous_feature_bar)
+        overview.write(13, 1, self.experiment_replaced_bar)
 
         for n, alignment in enumerate(self.alignments):
             row = 0
             wb.add_sheet(alignment.comparison_parse.name)
             piece_sheet = wb.get_sheet(n + 1)
-
             shift_num = 0
 
             for score in alignment.scores:
-        #         # print n + shift_num
-        #         # if '' != inner_obj.replaced_bar:
-        #         num_correct += 1
                 piece_sheet.write(row, 0, "Shift")
                 piece_sheet.write(row, 1, str(shift_num))
                 piece_sheet.write(row + 1, 1, alignment.gapped_parse.name)
                 piece_sheet.write(row + 2, 1, alignment.comparison_parse.name)
-
+                piece_sheet.write(row + 3, 1, "Metric")
+                piece_sheet.write(row + 4, 1, "Total Metric")
+                total_metric = 0
                 for i in range(len(score.gapped_feat)):
                     piece_sheet.write(row + 1, i + 2, score.gapped_feat[i])
                     piece_sheet.write(row + 2, i + 2, score.comparison_feat[i])
+                    scorer = simple_alignments.Scorer(score.gapped_feat[i], score.comparison_feat[i])
+                    curr_metric = 0
+                    if self.scoring_method == 0:
+                        curr_metric = scorer.simple_score()
+                    elif self.scoring_method == 1:
+                        curr_metric = scorer.edit_distance()
+                    total_metric += curr_metric
 
-
-                # for i in range(len(score.gapped_feat)):
-                #     piece_sheet.write(row + 1, i + 2, score.gapped_feat[i])
-                # for i in range(len(score.comparison_feat)):
-                #     piece_sheet.write(row + 2, i + 2, score.comparison_feat[i])
+                    piece_sheet.write(row + 3, i + 2, curr_metric)
+                    piece_sheet.write(row + 4, i + 2, total_metric)
 
                 piece_sheet.write(row + 5, 1, "Score")
                 piece_sheet.write(row + 6, 1, "Replaced Bar")
@@ -183,8 +181,9 @@ class Experimenter:
 
         wb.save(path + "/result.xls")
 
+
 def main():
-    result = Experimenter("../corpus/palestrina.txt", 2, "rhythm", 0)
+    result = Experimenter("../corpus/palestrina.txt", 2, "rhythm", 1)
     result.run_alignments()
 
     # result.is_duplicate()

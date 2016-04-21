@@ -11,12 +11,16 @@ class SimpleAlignment:
     scores = []
     alignment_metric_result = 0
     alignment_replaced_bar = ""
+    alignment_gapped_feat = []
+    alignment_comparion_feat = []
 
     def __init__(self, gapped, comparison, scoring_method):
         self.gapped_parse = copy.deepcopy(gapped)
         self.comparison_parse = copy.deepcopy(comparison)
         self.scoring_method = scoring_method
         self.scores = []
+        self.alignment_gapped_feat = []
+        self.alignment_comparison_feat = []
         self.align()
         self.set_alignment_result()
 
@@ -61,25 +65,27 @@ class SimpleAlignment:
         return piece
 
     def set_alignment_result(self):
-        score_metric = self.scores[0].metric
-        score_replaced_bar = self.scores[0].replaced_bar_feat
+        score_obj = self.scores[0]
+        score_metric = score_obj.metric
         for score in self.scores:
             if self.scoring_method == 0:
                 # max score
                 if score.metric > score_metric and score.replaced_bar_feat != "":
+                    score_obj = score
                     score_metric = score.metric
-                    score_replaced_bar = score.replaced_bar_feat
             elif self.scoring_method == 1:
                 # min distance
                 if score.metric < score_metric and score.replaced_bar_feat != "":
+                    score_obj = score
                     score_metric = score.metric
-                    score_replaced_bar = score.replaced_bar_feat
-            if score_replaced_bar == "" and score.replaced_bar_feat != "":
+            if score_obj.replaced_bar_feat == "" and score.replaced_bar_feat != "":
+                score_obj = score
                 score_metric = score.metric
-                score_replaced_bar = score.replaced_bar_feat
 
-        self.alignment_metric_result = score_metric
-        self.alignment_replaced_bar = score_replaced_bar
+        self.alignment_metric_result = score_obj.metric
+        self.alignment_replaced_bar = score_obj.replaced_bar_feat
+        self.alignment_gapped_feat = score_obj.gapped_feat
+        self.alignment_comparison_feat = score_obj.comparison_feat
 
 
 class Score:
@@ -87,16 +93,14 @@ class Score:
     comparison_feat = []
 
     replaced_bar_feat = ""
-    metric = -1
+    metric = 0
 
     def __init__(self, gapped_feat, comparison_feat, adjust, method):
         self.gapped_feat = gapped_feat
         self.comparison_feat = comparison_feat
 
         self.replaced_bar_feat = comparison_feat[adjust]
-
         self.metric = self.get_metric(self.gapped_feat, self.comparison_feat, method)
-
 
     @staticmethod
     def get_metric(gapped, comparison, method):
@@ -104,14 +108,15 @@ class Score:
         for i in range(len(gapped)):
             scorer = Scorer(gapped[i], comparison[i])
             if method == 0:
-                metric += scorer.edit_distance()
-            elif method == 1:
                 metric += scorer.simple_score()
+            elif method == 1:
+                metric += scorer.edit_distance()
         return metric
 
 
 class Scorer:
     match_score = 1
+    mismatch_score = 0
     x = ""
     y = ""
 
@@ -122,6 +127,8 @@ class Scorer:
     def simple_score(self):
         if self.x == self.y:
             return self.match_score
+        else:
+            return self.mismatch_score
 
     def edit_distance(self):
         n = len(self.y)
