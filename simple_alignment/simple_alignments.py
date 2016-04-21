@@ -93,7 +93,7 @@ class Score:
         self.gapped_feat = gapped_feat
         self.comparison_feat = comparison_feat
 
-        self.replaced_bar = comparison_feat[adjust]
+        self.replaced_bar_feat = comparison_feat[adjust]
 
         self.metric = self.get_metric(self.gapped_feat, self.comparison_feat, method)
 
@@ -102,7 +102,7 @@ class Score:
     def get_metric(gapped, comparison, method):
         metric = 0
         for i in range(len(gapped)):
-            scorer = Score(gapped[i], comparison[i])
+            scorer = Scorer(gapped[i], comparison[i])
             if method == 0:
                 metric += scorer.edit_distance()
             elif method == 1:
