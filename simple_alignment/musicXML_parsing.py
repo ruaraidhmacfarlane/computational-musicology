@@ -1,33 +1,29 @@
 import music21
 import sys
+import copy
 
 
 class MusicXMLParsing:
     name = ""
     parsed_score = None
-    rhythm_hash = []
-    # pitch_hash = []
-    parsons_code = []
     length = 0
-    previous_parsons_bar = ""
-    previous_rhythm_bar = ""
+    feature = []
+    gapped_feature = []
+    previous_feature_bar = ""
     gapped_bar_num = 0
     # Hard coded for now until gaps in bars get bigger
     GAP_LENGTH = 1
 
-    def __init__(self, path):
+    def __init__(self, path, mode):
         self.name = self._get_filename(path)
         if self.is_kern(path) or self.is_midi(path):
             path = music21.converter.parse(path).write('musicxml')
         self.parsed_score = music21.converter.parse(path)
-        # self.parsed_score.show()
-        # self.parsed_work = music21.parseWork(path)
-        self.rhythm_hash = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
-        self.length = len(self.rhythm_hash)
-        # self.pitch_hash = self._hash_pitches()
-        self.parsons_code = self._parsons_code()
-        # print self.rhythm_hash
-        # print self.parsons_code
+        if mode == "rhythm":
+            self.feature = music21.omr.correctors.ScoreCorrector(self.parsed_score).singleParts[0].hashedNotes
+        elif mode == "parsons":
+            self.feature = self._parsons_code()
+        self.length = len(self.feature)
         self.parsed_score = None
 
     @staticmethod
@@ -47,20 +43,17 @@ class MusicXMLParsing:
             return False
 
     def create_gap(self, bar):
-        if bar <= len(self.rhythm_hash):
+        if bar <= self.length:
             self.gapped_bar_num = bar
-            self.previous_rhythm_bar = self.rhythm_hash[bar - 1]
-            self.previous_parsons_bar = self.parsons_code[bar - 1]
-            self.rhythm_hash[bar - 1] = ''
-            self.parsons_code[bar - 1] = ''
+            self.previous_feature_bar = self.feature[bar - 1]
+            feature_copy = copy.deepcopy(self.feature)
+            feature_copy[bar - 1] = ''
+            self.gapped_feature = feature_copy
         else:
             sys.exit("Error: Cannot create a gap, bar is out of range of music")
 
-    def fill_gap(self, bar_num, bar, mode):
-        if mode == "rhythm":
-            self.rhythm_hash[bar_num - 1] = bar
-        elif mode == "parson":
-            self.parsons_code[bar_num - 1] = bar
+    def fill_gap(self, bar_num, bar):
+        self.gapped_feature[bar_num - 1] = bar
 
     """
 	u = "up," if the note is higher than the previous note

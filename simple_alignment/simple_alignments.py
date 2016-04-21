@@ -2,76 +2,51 @@ import music21
 import copy
 import musicXML_parsing
 import os
-import numpy
 
 
 class SimpleAlignment:
-    attr = ''  # parson || rhythm
-    gapped_name = ""
-    comparison_name = ""
     gapped_parse = None
     comparison_parse = None
-    gapped_piece = []
-    comparison_piece = []
-    longest_length = 0
-    gapped_bar_num = 0
-    min_edit_alignments = []
-    min_edit_obj = None
-    max_score_alignments = []
-    max_score_obj = None
-    alignment_score = 0
+    scoring_method = 1  # 0 Simple || 1 Edit Distance
+    scores = []
+    alignment_metric_result = 0
+    alignment_replaced_bar = ""
 
-    def __init__(self, gapped, comparison, feat, gap_num):
-        self.attr = feat
-        self.gapped_parse = gapped
+    def __init__(self, gapped, comparison, scoring_method):
+        self.gapped_parse = copy.deepcopy(gapped)
         self.comparison_parse = copy.deepcopy(comparison)
-        self.gapped_parse.create_gap(gap_num)
-        self.gapped_bar_num = gap_num
-        self.gapped_name = gapped.name
-        self.comparison_name = comparison.name
-        if self.attr == 'parson':
-            self.gapped_piece = copy.deepcopy(self.gapped_parse).parsons_code
-            self.comparison_piece = copy.deepcopy(self.comparison_parse).parsons_code
-        elif self.attr == 'rhythm':
-            self.gapped_piece = copy.deepcopy(self.gapped_parse).rhythm_hash
-            self.comparison_piece = copy.deepcopy(self.comparison_parse).rhythm_hash
+        self.scoring_method = scoring_method
+        self.scores = []
+        self.align()
+        self.set_alignment_result()
 
-        self.base_align()
-        # self.get_min_edit_obj()
-
-    def get_min_edit_obj(self):
-        align_obj = self.max_score_alignments[0]
-        align_score = align_obj.alignment_score
-
-        for i in self.max_score_alignments:
-            if i.alignment_score > align_score and align_obj.replaced_bar != '':
-                align_score = i.alignment_score
-                align_obj = i
-            elif align_obj.replaced_bar == '':
-                align_score = i.alignment_score
-                align_obj = i
-        self.max_score_obj = align_obj
-        self.alignment_score = align_obj.alignment_score
-
-    def base_align(self):
-        gapped_length = len(self.gapped_piece)
-        compare_length = len(self.comparison_piece)
+    def align(self):
+        gapped_length = self.gapped_parse.length
+        compare_length = self.comparison_parse.length
         if gapped_length == compare_length:
-            self.max_score_alignments.append(Score(self.gapped_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
+            metric = Score(self.gapped_parse.feature, self.comparison_parse.feature,
+                           self.gapped_parse.gapped_bar_num - 1, self.scoring_method)
+            self.scores.append(metric)
         elif gapped_length > compare_length:
-            extended_piece = copy.deepcopy(self.extend(self.comparison_piece, self.gapped_piece))
-            self.max_score_alignments.append(Score(self.gapped_piece, extended_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
+            extended_piece = self.extend(self.comparison_parse.feature, self.gapped_parse.feature)
+            metric = Score(self.gapped_parse.feature, extended_piece, self.gapped_parse.gapped_bar_num - 1,
+                           self.scoring_method)
+            self.scores.append(metric)
             for i in range(gapped_length - compare_length):
                 extended_piece = self.shift(extended_piece)
-                self.max_score_alignments.append(
-                    Score(self.gapped_piece, extended_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
+                metric = Score(self.gapped_parse.feature, extended_piece, self.gapped_parse.gapped_bar_num - 1,
+                               self.scoring_method)
+                self.scores.append(metric)
         elif gapped_length < compare_length:
-            extended_piece = copy.deepcopy(self.extend(self.gapped_piece, self.comparison_piece))
-            self.max_score_alignments.append(Score(extended_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1))
+            extended_piece = self.extend(self.gapped_parse.feature, self.comparison_parse.feature)
+            metric = Score(extended_piece, self.comparison_parse.feature, self.gapped_parse.gapped_bar_num - 1,
+                           self.scoring_method)
+            self.scores.append(metric)
             for i in range(compare_length - gapped_length):
                 extended_piece = self.shift(extended_piece)
-                self.max_score_alignments.append(
-                    Score(extended_piece, self.comparison_piece, self.comparison_parse.name, self.gapped_bar_num - 1 + i))
+                metric = Score(extended_piece, self.comparison_parse.feature, self.gapped_parse.gapped_bar_num - 1 + i,
+                               self.scoring_method)
+                self.scores.append(metric)
 
     @staticmethod
     def extend(shorter, longer):
@@ -85,63 +60,86 @@ class SimpleAlignment:
         piece = [swap] + piece
         return piece
 
+    def set_alignment_result(self):
+        score_metric = self.scores[0].metric
+        score_replaced_bar = self.scores[0].replaced_bar_feat
+        for score in self.scores:
+            if self.scoring_method == 0:
+                # max score
+                if score.metric > score_metric and score.replaced_bar_feat != "":
+                    score_metric = score.metric
+                    score_replaced_bar = score.replaced_bar_feat
+            elif self.scoring_method == 1:
+                # min distance
+                if score.metric < score_metric and score.replaced_bar_feat != "":
+                    score_metric = score.metric
+                    score_replaced_bar = score.replaced_bar_feat
+            if score_replaced_bar == "" and score.replaced_bar_feat != "":
+                score_metric = score.metric
+                score_replaced_bar = score.replaced_bar_feat
+
+        self.alignment_metric_result = score_metric
+        self.alignment_replaced_bar = score_replaced_bar
+
 
 class Score:
-    alignment_score = -1
-    replacing_arr_index = 0
-    actual_replaced_bar_num = 0
-    replaced_bar = ''
-    adjust_index = -1
-    comparison_obj = None
-    target_piece_name = ""
-    target_piece_feat = ""
+    gapped_feat = []
+    comparison_feat = []
 
-    def __init__(self, gapped, comparison, target_name, adjust):
-        self.target_piece_name = target_name
-        self.target_piece_feat = comparison
-        self.replaced_bar = comparison[adjust]
-        # self.alignment_score = self.get_alignment_score(gapped, comparison)
-        self.alignment_score = self.get_alignment_distance(gapped, comparison)
-        # print "Alignment Score: ", self.alignment_score
-        # print "Replaced Bar: ", self.replaced_bar
+    replaced_bar_feat = ""
+    metric = -1
 
-    # def _get_replaced_bar_num(self):
-    #     number = self.replacing_arr_index - self.comparison_obj.left_shift + 1
-    #     return number
+    def __init__(self, gapped_feat, comparison_feat, adjust, method):
+        self.gapped_feat = gapped_feat
+        self.comparison_feat = comparison_feat
 
-    def get_alignment_distance(self, gapped, comparison):
-        distance = 0
-        for i in range(len(gapped)):
-            distance += self.get_edit_distance(gapped[i], comparison[i])
-        return distance
+        self.replaced_bar = comparison_feat[adjust]
+
+        self.metric = self.get_metric(self.gapped_feat, self.comparison_feat, method)
+
 
     @staticmethod
-    def get_alignment_score(gapped, comparison):
-        # match score; if seq1(i) == seq2(i)
-        # mismatch score; if seq1(i) != seq2(i)
-        score = 0
+    def get_metric(gapped, comparison, method):
+        metric = 0
         for i in range(len(gapped)):
-            if gapped[i] == comparison[i]:
-                score += 1
-        return score
+            scorer = Score(gapped[i], comparison[i])
+            if method == 0:
+                metric += scorer.edit_distance()
+            elif method == 1:
+                metric += scorer.simple_score()
+        return metric
 
-    def get_edit_distance(self,target, source):
-        n = len(target)
-        m = len(source)
+
+class Scorer:
+    match_score = 1
+    x = ""
+    y = ""
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def simple_score(self):
+        if self.x == self.y:
+            return self.match_score
+
+    def edit_distance(self):
+        n = len(self.y)
+        m = len(self.x)
 
         distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
 
         for i in range(1, n + 1):
-            distance[i][0] = distance[i - 1][0] + self._insert_cost(target[i - 1])
+            distance[i][0] = distance[i - 1][0] + self._insert_cost(self.y[i - 1])
 
         for j in range(1, m + 1):
-            distance[0][j] = distance[0][j - 1] + self._delete_cost(source[j - 1])
+            distance[0][j] = distance[0][j - 1] + self._delete_cost(self.x[j - 1])
 
         for i in range(1, n + 1):
             for j in range(1, m + 1):
                 distance[i][j] = min(distance[i - 1][j] + 1,
                                      distance[i][j - 1] + 1,
-                                     distance[i - 1][j - 1] + self._subst_cost(source[j - 1], target[i - 1]))
+                                     distance[i - 1][j - 1] + self._subst_cost(self.x[j - 1], self.y[i - 1]))
         return distance[n][m]
 
     @staticmethod
@@ -159,20 +157,23 @@ class Score:
     def _delete_cost(x):
         return 1
 
+
 class Corpus:
     old_corpus_file = ""
     new_corpus_file = ""
+    mode = -1
     database = []
 
-    def __init__(self, old_file, new_file):
+    def __init__(self, old_file, new_file, mode):
         self.old_corpus_file = old_file
         self.new_corpus_file = new_file
+        self.mode = mode
 
     def fill_database(self):
         with open(self.new_corpus_file) as corpus:
             for path in corpus:
                 path = path.rstrip()
-                self.database.append(musicXML_parsing.MusicXMLParsing(path))
+                self.database.append(musicXML_parsing.MusicXMLParsing(path, self.mode))
 
     def list_dir(self):
         old_corpus = open(self.old_corpus_file, "w")
@@ -192,7 +193,7 @@ class Corpus:
                 path = path.rstrip()
                 print 'Line: ', line_num
                 try:
-                    musicXML_parsing.MusicXMLParsing(path)
+                    musicXML_parsing.MusicXMLParsing(path, self.mode)
                     new_corpus.write(path + "\n")
                     print 'Parsed', path
                 except AttributeError:

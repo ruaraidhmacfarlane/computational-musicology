@@ -1,106 +1,80 @@
-import copy
 import numpy
 import datetime
 import simple_alignments
 import musicXML_parsing
-import music21
+import os
+import xlwt
 
 
 class Experimenter:
     corpus_path = ""
-    output_file_path = ""
     mode = ""
+    scoring_method = -1
     gapped_bar_num = 0
-    gapped_bar = ""
 
-    def __init__(self, file_path, experiment_name, bar, mode):
-        self.gapped_bar_num = bar
+    alignments = []
+
+    ground_truth_path = ""
+    ground_truth = None
+
+    experiment_metric_result = 0
+    experiment_replaced_bar = ""
+    experiment_dist_result = 0
+
+    def __init__(self, file_path, bar, mode, method):
         self.corpus_path = file_path
         self.mode = mode
-        self.output_file_path = "../results/" + self.create_output_file(experiment_name) + ".txt"
-        self.experiment_name = experiment_name
+        self.scoring_method = method
+        self.gapped_bar_num = bar
 
-    def run_simple_alignment(self):
         piece_list = open(self.corpus_path, "r")
-        first_line = piece_list.readline()
-        first_line = first_line.rstrip()
+        path = piece_list.readline()
+        self.ground_truth_path = path.rstrip()
         piece_list.close()
-        ground_truth = musicXML_parsing.MusicXMLParsing(first_line)
-        if self.mode == "rhythm":
-            self.gapped_bar = ground_truth.rhythm_hash[self.gapped_bar_num - 1]
-        elif self.mode == "parson":
-            self.gapped_bar = ground_truth.parsons_code[self.gapped_bar_num - 1]
-        self.print_exp_info(ground_truth)
-        gapped = copy.deepcopy(ground_truth)
-        alignments = []
+
+        self.alignments = []
+
+        self.ground_truth = musicXML_parsing.MusicXMLParsing(self.ground_truth_path, self.mode)
+        self.ground_truth.create_gap(self.gapped_bar_num)
+
+        self.experiment_metric_result = 0
+        self.experiment_replaced_bar = ""
+        self.experiment_dist_result = 0
+
+    def run_alignments(self):
         with open(self.corpus_path) as corpus:
             for path in corpus:
                 path = path.rstrip()
-                if path != first_line:
-                    piece = musicXML_parsing.MusicXMLParsing(path)
-                    alignments.append(simple_alignments.SimpleAlignment(gapped, piece, self.mode, self.gapped_bar_num))
-        max_alignment = self.get_max_score_alignment(alignments)
-        # print "#### max alignment ", max_alignment
-        naive_result = copy.deepcopy(ground_truth)
-        naive_result.fill_gap(self.gapped_bar_num, max_alignment.replaced_bar, self.mode)
+                if path != self.ground_truth_path:
+                    comparison_piece = musicXML_parsing.MusicXMLParsing(path, self.mode)
+                    align = simple_alignments.SimpleAlignment(self.ground_truth, comparison_piece, self.scoring_method)
+                    self.alignments.append(align)
 
-        self.print_all_alignment_scores(alignments)
+        self.set_replacement_scorings()
+        scorer = simple_alignments.Scorer(self.ground_truth.previous_feature_bar, self.experiment_replaced_bar)
+        edit_dist_result = scorer.edit_distance()
+        self.experiment_dist_result = edit_dist_result
 
-        result = self.get_edit_distance(self.gapped_bar, naive_result[self.gapped_bar_num -1])
-        # self.write_output_file(ground_truth, naive_result, max_alignment.comparison_parse, result)
-        if self.mode == "rhythm":
-            self.print_output(ground_truth, naive_result, max_alignment.target_piece_name,
-                              max_alignment.target_piece_feat, max_alignment.alignment_score, result)
-        elif self.mode == "parson":
-            self.print_output(ground_truth, naive_result, max_alignment.target_piece_name,
-                              max_alignment.target_piece_feat, max_alignment.alignment_score, result)
+        self.create_result()
 
+    def set_replacement_scorings(self):
+        metric = self.alignments[0].alignment_metric_result
+        replaced_bar = self.alignments[0].alignment_replaced_bar
 
+        for align in self.alignments:
+            if self.scoring_method == 0:
+                # max score
+                if align.alignment_metric_result > metric:
+                    metric = align.alignment_metric_result
+                    replaced_bar = align.alignment_replaced_bar
+            elif self.scoring_method == 1:
+                # min distance
+                if align.metric < metric:
+                    metric = align.alignment_metric_result
+                    replaced_bar = align.alignment_replaced_bar
 
-    def get_edit_distance(self, gapped, comparison):
-        # if self.mode == "rhythm":
-        #     gapped = gapped_parse.rhythm_hash[self.gapped_bar_num - 1]
-        #     comparison = comparison_parse.rhythm_hash[self.gapped_bar_num - 1]
-        # elif self.mode == "parson":
-        #     gapped = gapped_parse.parsons_code[self.gapped_bar_num - 1]
-        #     comparison = comparison_parse.parsons_code[self.gapped_bar_num - 1]
-
-        n = len(gapped)
-        m = len(comparison)
-
-        distance = [[0 for i in range(m + 1)] for j in range(n + 1)]
-
-        for i in range(1, n + 1):
-            distance[i][0] = distance[i - 1][0] + self._insert_cost(gapped[i - 1])
-
-        for j in range(1, m + 1):
-            distance[0][j] = distance[0][j - 1] + self._delete_cost(comparison[j - 1])
-
-        for i in range(1, n + 1):
-            for j in range(1, m + 1):
-                distance[i][j] = min(distance[i - 1][j] + 1,
-                                     distance[i][j - 1] + 1,
-                                     distance[i - 1][j - 1] + self._subst_cost(comparison[j - 1], gapped[i - 1]))
-
-        max_value = numpy.amax(distance)
-        percentage = ((max_value - distance[n][m]) / max_value) * 100
-        # return percentage
-        return distance[n][m]
-
-    @staticmethod
-    def _subst_cost(x, y):
-        if x == y:
-            return 0
-        else:
-            return 2
-
-    @staticmethod
-    def _insert_cost(x):
-        return 1
-
-    @staticmethod
-    def _delete_cost(x):
-        return 1
+        self.alignment_metric_result = metric
+        self.alignment_replaced_bar = replaced_bar
 
     @staticmethod
     def get_max_score_alignment(all_alignments):
@@ -116,7 +90,8 @@ class Experimenter:
     @staticmethod
     def create_output_file(name):
         time = datetime.datetime.now()
-        filename = "%s-%s-%s" % (time.day, time.month, time.year) + "_%s-%s-%s" % (time.hour, time.minute, time.second) + "_" + name
+        filename = "%s-%s-%s" % (time.day, time.month, time.year) + "_%s-%s-%s" % (
+        time.hour, time.minute, time.second) + "_" + name
         return filename
 
     def is_duplicate(self):
@@ -125,7 +100,7 @@ class Experimenter:
         with open(self.corpus_path) as corpus:
             for path_i in corpus:
                 path_i = path_i.rstrip()
-                parsed_i =  musicXML_parsing.MusicXMLParsing(path_i)
+                parsed_i = musicXML_parsing.MusicXMLParsing(path_i)
                 for path_j in corpus:
                     path_j = path_j.rstrip()
                     if path_i != path_j:
@@ -135,10 +110,158 @@ class Experimenter:
                             # print "%s is the same as %s" % (parsed_i.name, parsed_j.name)
                             print path_j
                             # new_corpus.write(path_j + "\n")
-                        # else:
-                        #     print "--"
+                            # else:
+                            #     print "--"
                             # print "%s is different from %s" % (parsed_i.name, parsed_j.name)
-        # new_corpus.close()
+                            # new_corpus.close()
+
+    # def create_result(self, ground, similar_piece, all_alignments, comp_name, comp_feat, alignment_score, result):
+    def create_result(self, alignments):
+        if self.scoring_method == 0:
+            meth = "simple"
+        elif self.scoring_method == 1:
+            meth = "edit"
+        dir_name = self.ground_truth.name + "_" + self.mode + "_" + meth + "_" + str(self.ground_truth.gapped_bar_num)
+        path = "../results/" + dir_name
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        header = xlwt.easyxf('font: name Arial, color-index black, bold on')
+        highlight_match = xlwt.easyxf('font: name Arial, color-index red')
+
+        wb = xlwt.Workbook()
+        wb.add_sheet('Overview')
+        overview = wb.get_sheet(0)
+        overview.write(0, 0, "Analysing Mass:", header)
+        overview.write(1, 0, "Missing Bar Number:", header)
+        overview.write(2, 0, "Missing Bar:", header)
+        overview.write(0, 1, self.ground_truth.name)
+        overview.write(1, 1, str(self.ground_truth.gapped_bar_num))
+        overview.write(2, 1, self.ground_truth.previous_feature_bar)
+
+        # overview.write(3, 0, "Gold Standard", header)
+        # overview.write(6, 0, "Taken From Piece", header)
+
+        # overview.write(4, 0, "RESULTS", header)
+        # overview.write(5, 1, ground.name)
+        # overview.write(6, 1, comp_name)
+        # # overview.write(6, 1, "Edit Distance:")
+        # # overview.write(7, 1, "Aggregated Edit Distance")
+        # max_length = max(len(ground.rhythm_hash), len(comp_feat))
+
+        # total_dist = 0
+        # for i in range(max_length):
+        #     if i >= len(ground.rhythm_hash) - 1:
+        #         overview.write(6, i + 2, comp_feat[i])
+        #         # overview.write(6, i + 2, str(self.get_edit_distance("", comp_feat[i])))
+        #         # total_dist += self.get_edit_distance("", comp_feat[i])
+        #     elif i >= len(comp_feat) - 1:
+        #         overview.write(5, i + 2, ground.rhythm_hash[i])
+        #         # overview.write(6, i + 2, str(self.get_edit_distance(ground.rhythm_hash[i], "")))
+        #         # total_dist += self.get_edit_distance(ground.rhythm_hash[i], "")
+        #     else:
+        #         # if ground.rhythm_hash[i] == comp_feat[i]:
+        #         #     overview.write(4, i + 2, ground.rhythm_hash[i], highlight_match)
+        #         #     overview.write(5, i + 2, comp_feat[i], highlight_match)
+        #         # else:
+        #             overview.write(5, i + 2, ground.rhythm_hash[i])
+        #             overview.write(6, i + 2, comp_feat[i])
+        #     #     overview.write(6, i + 2, str(self.get_edit_distance(ground.rhythm_hash[i], comp_feat[i])))
+        #     #     total_dist += self.get_edit_distance(ground.rhythm_hash[i], comp_feat[i])
+        #     # overview.write(7, i + 2, str(total_dist))
+        #
+        # overview.write(8, 0, "Alignment Score: ", header)
+        # overview.write(9, 0, "Edit Distance: ", header)
+        # overview.write(10, 0, "Actual Bar: ", header)
+        # overview.write(11, 0, "Replaced Bar: ", header)
+        # overview.write(8, 1, str(alignment_score))
+        # overview.write(9, 1, str(result))
+        # overview.write(10, 1, ground.rhythm_hash[self.gapped_bar_num - 1])
+        # overview.write(11, 1, similar_piece.rhythm_hash[self.gapped_bar_num - 1])
+
+        # num_correct = 0
+        # masses = []
+        # for mass in all_alignments:
+        #     masses.append(mass)
+        #
+        for n, alignment in enumerate(alignments):
+            row = 0
+            wb.add_sheet(alignment.comparison_parse.name)
+            piece_sheet = wb.get_sheet(n + 1)
+        #     # piece_sheet.write(0, 0, outer_obj.comparison_name)
+        #     # for i in range(len(outer_obj.comparison_parse.rhythm_hash)):
+        #     #     piece_sheet.write(1, i + 2, outer_obj.comparison_parse.rhythm_hash[i])
+            shift_num = 0
+        #     # print len(outer_obj.max_score_alignments)
+            for score in alignment.scores:
+        #         # print n + shift_num
+        #         # if '' != inner_obj.replaced_bar:
+        #         num_correct += 1
+                piece_sheet.write(row, 0, "Shift")
+                piece_sheet.write(row, 1, str(shift_num))
+                piece_sheet.write(row + 1, 1, alignment.gapped_parse.name)
+                piece_sheet.write(row + 2, 1, alignment.comparison_parse.name)
+                for i in range(len(score.gapped_feat)):
+                    piece_sheet.write(row + 1, i + 2, score.gapped_feat[i])
+                for i in range(len(score.comparison_feat)):
+                    piece_sheet.write(row + 2, i + 2, score.comparison_feat[i])
+                # piece_sheet.write(row + 3, 1, "Score")
+                # piece_sheet.write(row + 4, 1, "Replaced Bar")
+                # piece_sheet.write(row + 5, 1, "Edit Distance")
+                # piece_sheet.write(row + 3, 2, str(inner_obj.alignment_score))
+                # piece_sheet.write(row + 4, 2, inner_obj.replaced_bar)
+                # result = self.get_edit_distance(self.gapped_bar, inner_obj.replaced_bar)
+                # piece_sheet.write(row + 5, 2, str(result))
+        #         #         #             if shift_num == 0 or shift_num == 8:
+        #         #         #                 print "TO CSV"
+        #         #         #                 print "   ", inner_obj.gapped_piece_feat
+        #         #         #                 print "   ", inner_obj.target_piece_feat
+        #         #         #             print "    Score = ", inner_obj.alignment_score
+        #         #         #             print "    Replaced Bar = ", inner_obj.replaced_bar
+        #         #         #             print "    Edit Distance = ", result
+                shift_num += 1
+                row += 4
+
+        # print "Returned %s results" % num_correct
+
+        wb.save(path + "/result.xls")
+
+    def get_alignment_distance(self, gapped, comparison):
+        distance = 0
+        for i in range(len(gapped)):
+            distance += self.get_align_distance(gapped[i], comparison[i])
+        return distance
+
+    def write_exp_info(self, ground):
+        dir_name = ground.name + "_" + self.mode + "_" + self.gapped_bar_num
+        os.makedirs("../results/" + dir_name)
+        filename = self.output_file_path
+        print filename
+        print "Experiment Name: ", self.create_output_file(self.experiment_name)
+        print "Piece Name: ", ground.name
+        print "Missing Bar Number: ", self.gapped_bar_num
+        print "Missing Bar: ", self.gapped_bar
+
+    def write_all_alignment_score(self, all_alignments):
+        num_correct = 0
+        for outer_obj in all_alignments:
+            print "Comparison Mass: ", outer_obj.comparison_name
+            print outer_obj.comparison_parse.rhythm_hash
+            shift_num = 0
+            for inner_obj in outer_obj.max_score_alignments:
+                if '' != inner_obj.replaced_bar:
+                    num_correct += 1
+                    print "  Shift: ", shift_num
+                    if shift_num == 0 or shift_num == 8:
+                        print "TO CSV"
+                        print "   ", inner_obj.gapped_piece_feat
+                        print "   ", inner_obj.target_piece_feat
+                    print "    Score = ", inner_obj.alignment_score
+                    print "    Replaced Bar = ", inner_obj.replaced_bar
+                    result = self.get_edit_distance(self.gapped_bar, inner_obj.replaced_bar)
+                    print "    Edit Distance = ", result
+                shift_num += 1
+        print "Returned %s results" % num_correct
 
     def write_output_file(self, ground, similar_piece, result):
         filename = self.output_file_path
@@ -170,18 +293,25 @@ class Experimenter:
         print "----------"
         print "ALL SCORES"
         print "----------"
+        num_correct = 0
         for outer_obj in all_alignments:
             print "Comparison Mass: ", outer_obj.comparison_name
+            print outer_obj.comparison_parse.rhythm_hash
             shift_num = 0
             for inner_obj in outer_obj.max_score_alignments:
-                print "   Shift: ", shift_num
-                if inner_obj.replaced_bar != '':
-                    print "     Score = ", inner_obj.alignment_score
-                    print "     Replaced Bar = ", inner_obj.replaced_bar
+                if '' != inner_obj.replaced_bar:
+                    num_correct += 1
+                    print "  Shift: ", shift_num
+                    if shift_num == 0 or shift_num == 8:
+                        print "TO CSV"
+                        print "   ", inner_obj.gapped_piece_feat
+                        print "   ", inner_obj.target_piece_feat
+                    print "    Score = ", inner_obj.alignment_score
+                    print "    Replaced Bar = ", inner_obj.replaced_bar
                     result = self.get_edit_distance(self.gapped_bar, inner_obj.replaced_bar)
-                    print "     Edit Distance = ", result
-                else:
-                    print "     No Bar to replace"
+                    print "    Edit Distance = ", result
+                shift_num += 1
+        print "Returned %s results" % num_correct
 
     def print_output(self, ground, similar_piece, comp_name, comp_feat, alignment_score, result):
         print "\n-------\nRESUlTS\n-------\n"
@@ -257,9 +387,11 @@ class Evaluator:
     def _delete_cost(x):
         return 1
 
+
 def main():
-    result = Experimenter("../corpus/palestrina.txt", "simple-alignment-rhythm", 2, "rhythm")
-    result.run_simple_alignment()
+    result = Experimenter("../corpus/palestrina.txt", 2, "rhythm", 0)
+    result.run_alignments()
+
     # result.is_duplicate()
     # result = Experimenter("../corpus/parsable-path-list-short.txt", "simple-alignment-parson", 2, "parson")
     # result.run_simple_alignment()
@@ -273,4 +405,6 @@ def main():
     # test = simple_alignments.SimpleAlignment(x,y,"rhythm",2)
     # print test.alignment_score
     # x = musicXML_parsing.MusicXMLParsing("../musicXML/palestrina/Agnus-Dei-1_Palestrina-Giovanni-Pierluigi-da_file1.krn")
+
+
 main()
